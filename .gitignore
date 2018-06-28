@@ -4,3 +4,11 @@ dissertation/**/*.toc
 dissertation/**/*.pdf
 dissertation/**/*.bcf
 dissertation/**/*.run.xml
+
+# Pycharm user-specific
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+
+venv/
