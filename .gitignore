@@ -1,0 +1,6 @@
+dissertation/**/*.aux
+dissertation/**/*.log
+dissertation/**/*.toc
+dissertation/**/*.pdf
+dissertation/**/*.bcf
+dissertation/**/*.run.xml
