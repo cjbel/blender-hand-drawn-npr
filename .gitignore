@@ -5,6 +5,9 @@ dissertation/**/*.pdf
 dissertation/**/*.bcf
 dissertation/**/*.run.xml
 
+blend_files/img
+**.blend1
+
 # Pycharm user-specific
 .idea/**/workspace.xml
 .idea/**/tasks.xml
