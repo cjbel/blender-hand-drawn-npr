@@ -1,5 +1,4 @@
-# Copied verbatim from:
-# http://scikit-image.org/docs/dev/auto_examples/edges/plot_circular_elliptical_hough_transform.html
+# Ref (verbatim): http://scikit-image.org/docs/dev/auto_examples/edges/plot_circular_elliptical_hough_transform.html
 
 import numpy as np
 import matplotlib.pyplot as plt

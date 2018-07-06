@@ -1,5 +1,4 @@
-# Copied verbatim from:
-# http://scikit-image.org/docs/dev/auto_examples/edges/plot_canny.html
+# Ref (verbatim): http://scikit-image.org/docs/dev/auto_examples/edges/plot_canny.html
 
 import numpy as np
 import matplotlib.pyplot as plt
