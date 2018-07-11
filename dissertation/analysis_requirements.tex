@@ -19,3 +19,51 @@
 % A-band: The problem analysis is excellent. The survey is comprehensive. The approach is clearly feasible and innovative.
 
 \chapter{Analysis \& Requirements}\label{analysis_requirements}
+
+\section{Background}
+% Notes:
+% Emphasise important features, minimise extraneous detail.
+% ...images communicate surface shading and curvature, as well as the depth relationships of objects of a scene.
+% ..sometimes a realistic image may be less effective than a stylized image.
+% "The goal of effective representational image making, whether you pain in oil or in numbers, is to select and manipulate visual information in order to direct the viewer's attention and determine the viewer's perception". Margret Hagen, haeberli1990.
+% a good illustration depicts the target objects or scenes in such a way that all the extraneous details are simplified or removed whilst the salient features are preserved or emphasised.
+% ...wide range of styles...
+% less important regions may be purposely abstracted to communicate "important" features to the viewers more effectively.
+% Shape features can be readily understood if certain geometric properties are enhanced.
+% ...techniques for visually communicating ideas.
+% Illustrations offer many advantages over photorealism, including their ability to abstract away detail, clarify shapes, and focus attention.
+% In order to communicate truly complex information effectively, some form of visual abstraction is required. This type of abstraction has been studied most comprehensively in the fields of graphic design and traditional illustration.
+% Illustrations can convey information better by omitting extraneous detail, by focussing attention of relevant features, by simplifying and clarifying shapes
+% Illustrations convey information better, consume less storage, are more easily reproduced, are more capable of conveying information at various levels of detail, and are in many respects more attractive than photo realistic images.
+
+A two-dimensional image has the power to communicate complex multi-dimensional information about its subject.
+An accurate depiction may convey the subject's form, texture, and depth relationship to other objects, which in turn allows us to intuitively build a mental model of the scene.
+
+For this to be achieved effectively, the style in which an image is produced must be selected appropriately based upon the communicational goals of the artist.
+For example, a traditional landscape watercolourist, technical writer, or marketeer all may wish to convey information about a given subject - all however will have substantially different goals.
+
+This disjoint in user requirements is particularly interesting when it comes to production of computer generated graphics, of which the majority of development has focussed upon producing photorealistic images.
+Photorealism may be perfect for the automotive marketeer who wishes to present car designs to the public, however such an approach is less well suited to the technical manuals of the same car, where the goal is to accurately convey fit, form and function of mechanical parts.
+Indeed, the medium upon which the image is to be delivered also plays an important role.
+For example, a high-resolution, full-colour, photorealistic image may be appropriate for a magazine. 
+A more abstract representation of the same parts may better convey the details required of the monochrome technical manual, where knowledge of surface texture and glossiness at best fail to add value, at worst may even distract the reader.
+
+The aim of the field of Non-Photorealistic Rendering (NPR) is to produce computer-generated images based upon the principles of traditional or digital art.
+Styles attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; drawing techniques such as stippling and pen-and-ink; and 3D shading techniques such as cel-shading and Gooch shading.
+Styles themselves may be manipulated by the artist to add expression - focusing the viewer's attention to areas of particular importance, whilst abstracting away unnecessary detail.
+As such, compared to photorealism, NPR techniques allow certain classes of visual information to be effectively conveyed in-line with the communicational goals of the artist.
+
+\section{Problem Definition}
+% Something needed to introduce the core use case - images for monochrome academic papers?
+
+Blender\footnotemark is a software package with capability for 2D sketching, 3D modelling, animation, physics simulation and rendering.
+Licensed under the GNU General Public License, Blender is free to use and as such enjoys widespread adoption across multiple fields.
+The software ships with a powerful rendering engine named Cycles, which can be used to produce high-quality renders.
+As a physically-based, path-tracing rendering engine, Cycles aim is to accurately simulate the interaction of light with various kinds of materials.
+This makes Cycles well-suited for producing photorealistic renderings.
+A limited range of NPR styles are also possible with Cycles, however these are predominately ``cartoon'' styles.
+
+\footnotetext{}
+
+\section{Aim \& Objectives}
+
