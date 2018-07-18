@@ -1,9 +1,9 @@
-dissertation/**/*.aux
-dissertation/**/*.log
-dissertation/**/*.toc
-dissertation/**/*.pdf
-dissertation/**/*.bcf
-dissertation/**/*.run.xml
+**/*.aux
+**/*.log
+**/*.toc
+**/*.pdf
+**/*.bcf
+**/*.run.xml
 
 blend_files/img
 **.blend1
