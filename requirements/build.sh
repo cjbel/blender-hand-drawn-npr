@@ -11,7 +11,7 @@ OUT_FILE="specification"
 
 # Clean up the build environment.
 function cleanup {
-   rm -f *.aux *.bbl *.blg *.dvi *.log *.out *.toc
+   rm -f *.aux *.bbl *.blg *.dvi *.out *.toc
 }
 
 # Essential for a reliable rebuild.

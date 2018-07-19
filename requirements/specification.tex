@@ -8,24 +8,12 @@
 \usepackage{catchfile}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
-\lhead{Rev: A}
+\lhead{Rev: B (draft)}
 \rhead{blender-hand-drawn-npr}
 
-% 	\newwrite\appendwrite
-% \newcommand{\appendtofile}[2]{%
-%     \begingroup
-%     \IfFileExists{#1}%
-%       {\CatchFileDef{\filecontent}{#1}{\endlinechar=`^^J\catcode\endlinechar=12\relax}}% keep existing end-of-lines
-%       {\let\filecontent\empty}%
-%     \immediate\openout\appendwrite=#1\relax
-%     \immediate\write\appendwrite{\filecontent #2}%
-%     \immediate\closeout\appendwrite
-%     \endgroup
-% }
-
 \newcommand{\freq}[1]{
-	% \appendtofile{\jobname_freq}{F\arabic{fReqNum}: #1}}
     [\textit{F\arabic{fReqNum}: #1}]%
+    % \wlog{F\arabic{fReqNum}: #1}
     \addtocounter{fReqNum}{10}%
 }
 
@@ -35,20 +23,23 @@
 
 \newcommand{\nreq}[1]{
     [\textit{N\arabic{nReqNum}: #1}]%
+    % \wlog{N\arabic{nReqNum}: #1}
     \addtocounter{nReqNum}{10}%
 }
 
 \newcommand{\clar}[1]{
     [\textit{C\arabic{clarNum}: #1}]%
+    % \wlog{C\arabic{clarNum}: #1}
     \addtocounter{clarNum}{10}%
 }
 
 \newcommand{\assump}[1]{
     [\textit{A\arabic{assumpNum}: #1}]%
+    % \wlog{A\arabic{assumpNum}: #1}
     \addtocounter{assumpNum}{10}%
 }
 
-\newcommand{\Qq}[1]{#1}
+\newcommand{\Qq}[1]{\textbf{#1}}
 
 \newcommand{\QO}{$\Box$}% or: $\ocircle$
 
@@ -114,6 +105,7 @@
 
 \section{Revision History}
 \begin{itemize}
+    \item B (this version): Customer comments incorporated. Requirement numbering frozen. Risks, User Stories and Coverage Matrix populated.
     \item A: First issue for Customer review and completion of Questionnaire.
 \end{itemize}
 
@@ -171,60 +163,129 @@ Traditional artists developed techniques to \nreq{reveal shading} and surface fe
 \subsection{Non-Functional Requirements}
 \subsubsection{Clarification of Initial Requirements}
 
-\Qitemclar{\Qq{Ref N10, define the term ``high-quality''.} \Qlines{4}}
-\Qitemclar{\Qq{Ref N50, state the minimum Blender version number to support.} \Qlines{1}}
-\Qitemclar{\Qq{Ref N100, interpretation is ``monochrome'' means strokes will be rendered in a single colour, rather than in tones of a single colour. Please clarify if otherwise.} \Qlines{2}}
-\Qitemclar{\Qq{Ref N120 and N160, interpretation is the the User will configure a Blender scene with a 3D surface mesh, including creation and positioning of a camera and any required lighting. This will be the starting point for interaction with the System. Please clarify if otherwise.} \Qlines{4}}
-\Qitemclar{\Qq{Ref N170, state the minimum SVG version number to support.} \Qlines{1}}
-\Qitemclar{\Qq{Ref N180, development will focus on producing stroke-based illustrations in the Pen-and-Ink style, which aligns with requirements N10, N20, N30, N40, N70, N80, N90, N100, N110, F10, F20, F30 and F40. If another illustration style is thought to be better suited, please state it here.} \Qlines{2}}
-\Qitemclar{\Qq{Ref N220, if there is a preference for where the GUI panels should be located within the Blender interface, please state so here.} \Qlines{2}}
+\Qitemclar{\Qq{Ref N10, define the term ``high-quality''.} \\
+\freq{Parsimony of ink: draw only the strokes which are needed and not superfluous ones.} 
+Strokes should reveal structure.
+
+\freq{Accuracy of curvature: strokes should not be excessively smoothed, nor excessively rough and should reflect the underlying geometry.}
+
+\freq{Consistency of lines: lines should not be unnaturally broken or incorrectly merged.} 
+\freq{Strokes should continue together cleanly.}
+
+\freq{Accuracy of joints: points where strokes merge (e.g. corners) should be accurately aligned, not offset messy crossings.}
+
+\freq{Variation of strokes: stroke thickness should vary in a way that reveals structure, e.g. lighting or perspective foreshortening.}
+
+\freq{Consistency of reproduction: small changes in mesh or view should result in small apparent changes in drawing (but temporal coherency, as for animations, is not required; randomness is quite acceptable).}
+}
+\Qitemclar{\Qq{Ref N50, state the minimum Blender version number to support.} \\
+Blender 2.79
+}
+\Qitemclar{\Qq{Ref N100, interpretation is ``monochrome'' means strokes will be rendered in a single colour, rather than in tones of a single colour. Please clarify if otherwise.} \\
+Primary goal will be B/W rendition (i.e. solid black strokes on white background).
+Optionally, \freq{strokes of a number of other shades may be included as an optional requirement, for example to indicate lighting of different colours on different facets.}
+}
+\Qitemclar{\Qq{Ref N120 and N160, interpretation is the the User will configure a Blender scene with a 3D surface mesh, including creation and positioning of a camera and any required lighting. This will be the starting point for interaction with the System. Please clarify if otherwise.} \\
+User will create the Blender scene. Software will be a pass after the scene has been completely created (modelled, lit, camera view set, etc.).
+}
+\Qitemclar{\Qq{Ref N170, state the minimum SVG version number to support.} \\
+SVG 1.1.
+}
+\Qitemclar{\Qq{Ref N180, development will focus on producing stroke-based illustrations in the Pen-and-Ink style, which aligns with requirements N10, N20, N30, N40, N70, N80, N90, N100, N110, F10, F20, F30 and F40. If another illustration style is thought to be better suited, please state it here.} \\
+Stroke based rendering is the priority. 
+Other rendering styles might include cross-hatching.
+}
+\Qitemclar{\Qq{Ref N220, if there is a preference for where the GUI panels should be located within the Blender interface, please state so here.} \\
+No strong preference. 
+Probably as a new panel in the right hand panels, or perhaps at the bottom of the render panel?
+}
 
 \subsubsection{Additional Requirements}
 
-\Qitemn{\Qq{Which operating systems shall be supported? Please also indicate minimum version numbers.}
-\begin{Qlist}
-\item Windows: \Qline{4cm}
-\item Linux: \Qline{4cm}
-\item MacOS: \Qline{4cm}
-\item Other: \Qline{10cm}
-\end{Qlist}
+\Qitemn{\Qq{Which operating systems shall be supported? Please also indicate minimum version numbers.} \\
+Windows 10 support desired and should be tested; Ubuntu Linux as a lower priority; ideally no OS-specific requirements.
 }
 \Qitemn{Please rate the relative importance of each of the following characteristics:
 \begin{itemize}
-\item Functionality \Qtab{3cm}{least important \Qrating{6} most important}
-\item Reliability \Qtab{3cm}{least important \Qrating{6} most important}
-\item Usability \Qtab{3cm}{least important \Qrating{6} most important}
-\item Efficiency \Qtab{3cm}{least important \Qrating{6} most important}
-\item Maintainability \Qtab{3cm}{least important \Qrating{6} most important}
-\item Portability \Qtab{3cm}{least important \Qrating{6} most important}
+\item Functionality.
+\item Reliability.
+\item Usability.
+\item Portability.
+\item Efficiency.
+\item Maintainability.
 \end{itemize}
 }
-\Qitemn{\Qq{In a few sentences, state the most critical measure of success for the System, i.e. what does a successful product look like?} \Qlines{4}}
-\Qitemn{\Qq{It is assumed that only a single mesh will be present in the Scene to be rendered. Please clarify if otherwise.} \Qlines{2}}
-\Qitemn{\Qq{If there are other non-functional requirements not captured by the sections above, please state them here.} \Qlines{10}}
+\Qitemn{\Qq{In a few sentences, state the most critical measure of success for the System, i.e. what does a successful product look like?} \\ 
+A user opens a Blender scene. 
+They click a button and an SVG document is produced that produces an aesthetically pleasing, accurate representation of the scene, using only strokes, with a parsimony of ink and effective communication of the surface features.
+}
+\Qitemn{\Qq{It is assumed that only a single mesh will be present in the Scene to be rendered. Please clarify if otherwise.} \\ 
+Single mesh is reasonable assumption.
+}
+\Qitemn{\Qq{If there are other non-functional requirements not captured by the sections above, please state them here.} \\ 
+None I can think of.
+}
 
 \subsection{Functional Requirements}
 \subsubsection{Clarification of Initial Requirements}
 
-\Qitemclar{\Qq{Ref F10, interpretation ``line-only'' means only the object outline/silhouette will be rendered. Please clarify if otherwise.} \Qlines{2}}
-\Qitemclar{\Qq{Ref F20, interpretation is ``highlight creases'' means only edges whose neighbouring faces meet at an angle greater than a User-defined value will be rendered. Please clarify if otherwise.} \Qlines{2}}
-\Qitemclar{\Qq{Ref F30, interpretation is ``no lighting'' means only geometric data (or world data such as ambient occlusion) would be used to determine the placement of feature-highlighting strokes. Please clarify if otherwise.} \Qlines{2}}
-\Qitemclar{\Qq{Ref F50, should the User have the option to toggle this stroke tapering effect on and off?}  \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemclar{\Qq{Ref F50, should the User have the option to influence degree of stroke taper by controlling max and min stroke thickness?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemclar{\Qq{Ref F60, selection of faces or edges will either be via the existing selection tools available in the Blender wireframe view, or by ``painting'' areas using the Blender Grease Pencil. If one particular method is more desirable, or if another method is required, please state it here.} \Qlines{4}}
+\Qitemclar{\Qq{Ref F10, interpretation ``line-only'' means only the object outline/silhouette will be rendered. Please clarify if otherwise.} \\ 
+Line-only could include synthesised lines e.g. to show contours which would not fall on the silhouette.
+}
+\Qitemclar{\Qq{Ref F20, interpretation is ``highlight creases'' means only edges whose neighbouring faces meet at an angle greater than a User-defined value will be rendered. Please clarify if otherwise.} \\
+Creases would be defined in terms of curvature (either the geometric curvature of the mesh, or the visual apparent curvature) rather than in terms of angles.
+}
+\Qitemclar{\Qq{Ref F30, interpretation is ``no lighting'' means only geometric data (or world data such as ambient occlusion) would be used to determine the placement of feature-highlighting strokes. Please clarify if otherwise.} \\
+Actually I think lighting is fairly important and should be included. 
+In particular \freq{it should be possible to adjust density or thickness of strokes according to incident light, either diffuse direct light, or to emphasise areas using AO information.}
+}
+\Qitemclar{\Qq{Ref F50, should the User have the option to toggle this stroke tapering effect on and off?} \\
+User should be able to control stroke effects.
+}
+\Qitemclar{\Qq{Ref F50, should the User have the option to influence degree of stroke taper by controlling max and min stroke thickness?} \\
+Yes.
+}
+\Qitemclar{\Qq{Ref F60, selection of faces or edges will either be via the existing selection tools available in the Blender wireframe view, or by ``painting'' areas using the Blender Grease Pencil. If one particular method is more desirable, or if another method is required, please state it here.} \\
+Would expect either Grease Pencil or the “Mark Seam” functionality in the mesh editor (used for indicating UV unwrapping). 
+As a general point, \nreq{might want to consider the UV maps as a useful source of information – this is a way the user can specify the structure of the shape in more detail.}
+}
 
 \subsubsection{Additional Requirements}
 
-\Qitemf{\Qq{Should there be natural variation in generated stroke waviness/curvature?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{If yes to the above, should the User have control over the global variation of waviness/curvature?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{Should there be natural variation in generated stroke thickness along the length of a stroke (independent of distance from the camera)?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{If yes to the above, should the User have control over the global variation of thickness?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{Should the User have control over the preferred global density of generated strokes?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{Should the User have control over the directionality of generated strokes? If so, how should this be controlled?} \newline \QO{} Yes \Qline{8cm} \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{Should the User have control over the global stroke colour?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{Should the User have control over the canvas (image background) colour?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{If there are other functional requirements not captured by the sections above, please state them here.} \Qlines{10}}
+\Qitemf{\Qq{Should there be natural variation in generated stroke waviness/curvature?} \\
+Natural variation as an optional requirement, configurable if present.
+}
+\Qitemf{\Qq{If yes to the above, should the User have control over the global variation of waviness/curvature?} \\
+Natural variation as an optional requirement, configurable if present.
+}
+\Qitemf{\Qq{Should there be natural variation in generated stroke thickness along the length of a stroke (independent of distance from the camera)?}
+Yes, but optional requirement, and configurable.
+}
+\Qitemf{\Qq{If yes to the above, should the User have control over the global variation of thickness?} \\
+Yes, but optional requirement, and configurable.
+}
+\Qitemf{\Qq{Should the User have control over the preferred global density of generated strokes?} \\
+Yes, configuration of density is important. 
+Perhaps only globally; ideally also locally somehow (but may not be feasible).
+}
+\Qitemf{\Qq{Should the User have control over the directionality of generated strokes? If so, how should this be controlled?} \\
+Not clear how this could be usefully controlled? Doesn’t seem a key requirement.
+}
+\Qitemf{\Qq{Should the User have control over the global stroke colour?} \\
+Yes, though this isn’t critical (since could just open in an SVG editor and recolour).
+}
+\Qitemf{\Qq{Should the User have control over the canvas (image background) colour?} \\
+Yes, though this isn’t critical (since could just open in an SVG editor and recolour).
+}
+\Qitemf{\Qq{If there are other functional requirements not captured by the sections above, please state them here.} \\
+If supporting multi-meshes, would be good to be able to \freq{separate strokes from objects into SVG layers so they can be edited separately.} 
+\freq{Separating into layers could also be used for strokes from different sources (e.g. silhouette, contour, strokes from different light sources).}
+This isn’t a critical feature, but being able to easily work with groups of strokes in the SVG editing stage would be useful.
+Certainly, one preference would be that \nreq{editing the generated SVG files should be structured so that this is pleasant and efficient to do.}
 
+\nreq{Consideration of how shadows will be handled is important.}
+This might be straightforward but should be considered.
+}
 
 \newpage
 \section{Assumptions}
@@ -266,18 +327,15 @@ Based upon \citep{hertzmann2002}, \citep{salisbury1994}, \citep{salisbury1996} a
 
 \section{Risks}
 
-To be considered upon completion of Questionnaire.
 
 \newpage
 \section{User Stories} \label{userstories}
 
-To be considered upon completion of Questionnaire.
 
 \appendix
 \newpage
 \section{Coverage Matrix} \label{coveragematrix}
 
-To be considered upon completion of Questionnaire.
 \begin{figure}[h]
 \includegraphics[width=\textwidth]{coverage_matrix}
 \centering
