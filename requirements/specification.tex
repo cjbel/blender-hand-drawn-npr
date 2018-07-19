@@ -21,26 +21,26 @@
 
 \newcommand{\freq}[1]{
 	% \appendtofile{\jobname_freq}{F\arabic{fReqNum}: #1}}
-    [\textbf{F\arabic{fReqNum}: #1}]%
+    [\textit{F\arabic{fReqNum}: #1}]%
     \addtocounter{fReqNum}{10}%
 }
 
 \newcommand{\freqman}[2]{
-    [\textbf{F#1: #2}]
+    [\textit{F#1: #2}]
 }
 
 \newcommand{\nreq}[1]{
-    [\textbf{N\arabic{nReqNum}: #1}]%
+    [\textit{N\arabic{nReqNum}: #1}]%
     \addtocounter{nReqNum}{10}%
 }
 
 \newcommand{\clar}[1]{
-    [\textbf{C\arabic{clarNum}: #1}]%
+    [\textit{C\arabic{clarNum}: #1}]%
     \addtocounter{clarNum}{10}%
 }
 
 \newcommand{\assump}[1]{
-    [\textbf{A\arabic{assumpNum}: #1}]%
+    [\textit{A\arabic{assumpNum}: #1}]%
     \addtocounter{assumpNum}{10}%
 }
 
@@ -72,21 +72,21 @@
 
 \newcommand{\Qitemf}[2][]{
 \begin{enumerate}[topsep=2pt,leftmargin=2.8em]
-\item[\textbf{F\arabic{fReqNum}#1.}] #2
+\item[\textit{F\arabic{fReqNum}#1.}] #2
 \addtocounter{fReqNum}{10}
 \end{enumerate}
 }
 
 \newcommand{\Qitemn}[2][]{
 \begin{enumerate}[topsep=2pt,leftmargin=2.8em]
-\item[\textbf{N\arabic{nReqNum}#1.}] #2
+\item[\textit{N\arabic{nReqNum}#1.}] #2
 \addtocounter{nReqNum}{10}
 \end{enumerate}
 }
 
 \newcommand{\Qitemclar}[2][]{
 \begin{enumerate}[topsep=2pt,leftmargin=2.8em]
-\item[\textbf{C\arabic{clarNum}#1.}] #2
+\item[\textit{C\arabic{clarNum}#1.}] #2
 \addtocounter{clarNum}{10}
 \end{enumerate}
 }
@@ -113,10 +113,10 @@ This document defines the Functional and Non-Functional requirements of the Syst
 Critical statements are given unique IDs as follows:
 
 \begin{itemize}
-\item Functional requirements are indicated with prefix \textbf{F}.
-\item Non-Functional requirements are indicated with prefix \textbf{N}.
-\item Clarifications to initial requirements are indicated with prefix \textbf{C}.
-\item Assumptions are indicated with prefix \textbf{A}.
+\item Functional requirements are indicated with prefix \textit{F}.
+\item Non-Functional requirements are indicated with prefix \textit{N}.
+\item Clarifications to initial requirements are indicated with prefix \textit{C}.
+\item Assumptions are indicated with prefix \textit{A}.
 \end{itemize}
 
 Functional requirements will form the basis of User Stories (Section \ref{userstories}).
