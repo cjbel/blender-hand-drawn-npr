@@ -106,12 +106,12 @@
 \maketitle
 \tableofcontents
 
+\newpage
 \section{Purpose}
 
 This document defines the Functional and Non-Functional requirements of the System. 
 Critical statements are given unique IDs as follows:
 
-\newpage
 \begin{itemize}
 \item Functional requirements are indicated with prefix \textbf{F}.
 \item Non-Functional requirements are indicated with prefix \textbf{N}.
@@ -166,7 +166,7 @@ Traditional artists developed techniques to \nreq{reveal shading} and surface fe
 \Qitemclar{\Qq{Ref N100, interpretation is ``monochrome'' means strokes will be rendered in a single colour, rather than in tones of a single colour. Please clarify if otherwise.} \Qlines{2}}
 \Qitemclar{\Qq{Ref N120 and N160, interpretation is the the User will configure a Blender scene with a 3D surface mesh, including creation and positioning of a camera and any required lighting. This will be the starting point for interaction with the System. Please clarify if otherwise.} \Qlines{4}}
 \Qitemclar{\Qq{Ref N170, state the minimum SVG version number to support.} \Qlines{1}}
-\Qitemclar{\Qq{Ref N180, development will focus on producing stroke-based illustrations in the Pen-and-Ink style, which aligns with requirements N10, N20, N30, N40, N70, N80, N90, N100, N110, N210, F10, F20, F30 and F40. If another illustration style is thought to be better suited, please state it here.} \Qlines{2}}
+\Qitemclar{\Qq{Ref N180, development will focus on producing stroke-based illustrations in the Pen-and-Ink style, which aligns with requirements N10, N20, N30, N40, N70, N80, N90, N100, N110, F10, F20, F30 and F40. If another illustration style is thought to be better suited, please state it here.} \Qlines{2}}
 \Qitemclar{\Qq{Ref N220, if there is a preference for where the GUI panels should be located within the Blender interface, please state so here.} \Qlines{2}}
 
 \subsubsection{Additional Requirements}
@@ -189,10 +189,8 @@ Traditional artists developed techniques to \nreq{reveal shading} and surface fe
 \item Portability \Qtab{3cm}{least important \Qrating{6} most important}
 \end{itemize}
 }
-\Qitemn{\Qq{It is assumed that only a single mesh will be present in the Scene to be rendered. Please clarify if otherwise.} \Qlines{2}}
-
 \Qitemn{\Qq{In a few sentences, state the most critical measure of success for the System, i.e. what does a successful product look like?} \Qlines{4}}
-
+\Qitemn{\Qq{It is assumed that only a single mesh will be present in the Scene to be rendered. Please clarify if otherwise.} \Qlines{2}}
 \Qitemn{\Qq{If there are other non-functional requirements not captured by the sections above, please state them here.} \Qlines{10}}
 
 \subsection{Functional Requirements}
@@ -202,20 +200,32 @@ Traditional artists developed techniques to \nreq{reveal shading} and surface fe
 \Qitemclar{\Qq{Ref F20, interpretation is ``highlight creases'' means only edges whose neighbouring faces meet at an angle greater than a User-defined value will be rendered. Please clarify if otherwise.} \Qlines{2}}
 \Qitemclar{\Qq{Ref F30, interpretation is ``no lighting'' means only geometric data (or world data such as ambient occlusion) would be used to determine the placement of feature-highlighting strokes. Please clarify if otherwise.} \Qlines{2}}
 \Qitemclar{\Qq{Ref F50, should the User have the option to toggle this stroke tapering effect on and off?}  \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemclar{\Qq{Ref F50, should the User have the option to influence degree of taper by controlling max and min stroke thickness?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
+\Qitemclar{\Qq{Ref F50, should the User have the option to influence degree of stroke taper by controlling max and min stroke thickness?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemclar{\Qq{Ref F60, selection of faces or edges will either be via the existing selection tools available in the Blender wireframe view, or by ``painting'' areas using the Blender Grease Pencil. If one particular method is more desirable, or if another method is required, please state it here.} \Qlines{4}}
 
 \subsubsection{Additional Requirements}
 
-\Qitemf{\Qq{Should there be variation in generated stroke waviness/curvature?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
+\Qitemf{\Qq{Should there be natural variation in generated stroke waviness/curvature?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{If yes to the above, should the User have control over the global variation of waviness/curvature?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
-\Qitemf{\Qq{Should there be variation in generated stroke thickness (independent of distance from the camera)?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
+\Qitemf{\Qq{Should there be natural variation in generated stroke thickness along the length of a stroke (independent of distance from the camera)?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{If yes to the above, should the User have control over the global variation of thickness?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{Should the User have control over the preferred global density of generated strokes?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{Should the User have control over the directionality of generated strokes? If so, how should this be controlled?} \newline \QO{} Yes \Qline{8cm} \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{Should the User have control over the global stroke colour?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{Should the User have control over the canvas (image background) colour?} \newline \QO{} Yes \hskip0.5cm \QO{} No}
 \Qitemf{\Qq{If there are other functional requirements not captured by the sections above, please state them here.} \Qlines{10}}
+
+
+\newpage
+\section{Assumptions}
+\begin{itemize}
+\item A purely \assump{image-space} based approach will be taken, i.e. no inputs are taken from Blender's object-space.
+\item \assump{It is not possible to obtain image-space data directly from Blender's render passes via the Python API}.
+\item As a consequence of A20, \assump{Blender must save the required input images to disk before they can be processed by the System.}
+\item As a consequence of A30, we define a new requirement: \freq{The System shall automatically activate required render passes and produce the required compositor node setup for saving these images to disk.}
+\item \assump{The goal of the System is to obtain the Final Rendering for use in other software packages.}
+\item As a consequence of A50, we define a new requirement: \freq{The Final Rendering shall be saved to disk, and will not be presented on-screen within Blender.}
+\end{itemize}
 
 
 \newpage
@@ -228,15 +238,6 @@ Adapted from \cite{kang2006}.
 \includegraphics[width=\textwidth]{flow}
 \centering
 \end{figure}
-
-\begin{itemize}
-\item A purely \assump{image-space} based approach will be taken, i.e. no inputs are taken from Blender's object-space.
-\item \assump{It is not possible to obtain image-space data directly from Blender's render passes via the Python API}.
-\item As a consequence of A20, \assump{Blender must save the required input images to disk before they can be processed by the System.}
-\item As a consequence of A30, we define a new requirement: \freq{The System shall automatically activate required render passes and produce the required compositor node setup for saving these images to disk.}
-\item \assump{The goal of the System is to obtain the Final Rendering for use in other software packages.}
-\item As a consequence of A50, we define a new requirement: \freq{The Final Rendering shall be saved to disk, and will not be presented on-screen within Blender.}
-\end{itemize}
 
 \subsection{Architecture}
 
