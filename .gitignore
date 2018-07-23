@@ -9,6 +9,7 @@ blend_files/img
 **.blend1
 
 .pytest_cache/
+**/__pycache__/
 
 # Pycharm user-specific
 .idea/**/workspace.xml

@@ -1,10 +1,11 @@
 import unittest
 import bpy
+from blender_hand_drawn_npr import hand_drawn_npr
 
 
 class Tests(unittest.TestCase):
 
-    addon_name = "hand_drawn_npr"
+    addon_name = hand_drawn_npr.bl_info["name"].lower().replace(" ", "_")
 
     def setUp(self):
         bpy.ops.wm.addon_enable(module=self.addon_name)
@@ -19,7 +20,7 @@ class Tests(unittest.TestCase):
 
     def test_main_panel(self):
         """ Test that the main panel is registered. """
-        self.assertTrue(hasattr(bpy.types, "RENDER_PT_hand_drawn_main_panel"))
+        self.assertTrue(hasattr(bpy.types, hand_drawn_npr.MainPanel.bl_idname))
 
 
 # Ref: https://wiki.blender.org/wiki/Tools/Tests/Python

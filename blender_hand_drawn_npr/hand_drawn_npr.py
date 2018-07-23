@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG,
                     filename=log_file,
                     filemode="w")
 
-bl_info = {"name": "hand Drawn NPR", "category": "Render"}
+bl_info = {"name": "Hand Drawn NPR", "category": "Render"}
 
 print(bl_info["name"] + " logging path: " + log_file)
 
@@ -20,8 +20,8 @@ class MainPanel(bpy.types.Panel):
 
     logging.debug("Instantiating MainPanel...")
 
-    bl_label = "Hand Drawn NPR"
-    bl_idname = "RENDER_PT_hand_drawn_main_panel"
+    bl_label = bl_info["name"]
+    bl_idname = "RENDER_PT_hdn_main_panel"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "render"
