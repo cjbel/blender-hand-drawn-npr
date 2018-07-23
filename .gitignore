@@ -8,6 +8,8 @@
 blend_files/img
 **.blend1
 
+.pytest_cache/
+
 # Pycharm user-specific
 .idea/**/workspace.xml
 .idea/**/tasks.xml
