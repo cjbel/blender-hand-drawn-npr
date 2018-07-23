@@ -22,10 +22,6 @@ class Tests(unittest.TestCase):
         panel_idname = "RENDER_PT_hdn_main_panel"
         self.assertTrue(hasattr(bpy.types, panel_idname))
 
-    def test_travis(self):
-        """ Test that Travis CI is working, build should fail here. """
-        self.assertTrue(False)
-
 
 # Ref: https://wiki.blender.org/wiki/Tools/Tests/Python
 if __name__ == '__main__':
