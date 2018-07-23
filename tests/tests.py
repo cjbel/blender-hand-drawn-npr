@@ -1,6 +1,6 @@
 import unittest
 import bpy
-from . import hand_drawn_npr
+from blender_hand_drawn_npr import hand_drawn_npr
 
 
 class Tests(unittest.TestCase):
