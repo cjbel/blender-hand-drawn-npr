@@ -6,5 +6,5 @@ before_install:
 script:
 - cd $TRAVIS_BUILD_DIR
 - pwd
-- python install_addon.py
-- ./run_tests.sh
+- blender -b -P install_addon.py
+- blender -b -P tests/tests.py
