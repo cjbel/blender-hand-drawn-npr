@@ -6,4 +6,5 @@ before_install:
 script:
 - cd $TRAVIS_BUILD_DIR
 - pwd
+- python install_addon.py
 - ./run_tests.sh
