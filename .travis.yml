@@ -1,0 +1,6 @@
+language: python
+sudo: enabled
+before_install:
+- sudo apt-get update -qq
+- sudo apt-get install -qq blender
+script: run_tests.sh
