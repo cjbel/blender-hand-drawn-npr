@@ -22,6 +22,18 @@ class Tests(unittest.TestCase):
         panel_idname = "RENDER_PT_hdn_main_panel"
         self.assertTrue(hasattr(bpy.types, panel_idname))
 
+    def test_system_checkbox(self):
+        """ Test that the checkbox which enables/disables the system is present. """
+        pass
+
+    def test_pre_render_hooks(self):
+        """ Test that pre-render handlers have been registered. """
+        pass
+
+    def test_post_render_hooks(self):
+        """ Test that post-render handlers have been registered. """
+        pass
+
 
 # Ref: https://wiki.blender.org/wiki/Tools/Tests/Python
 if __name__ == '__main__':

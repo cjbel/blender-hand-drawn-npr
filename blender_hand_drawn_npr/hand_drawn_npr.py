@@ -15,6 +15,14 @@ bl_info = {"name": "Hand Drawn NPR", "category": "Render"}
 print(bl_info["name"] + " logging path: " + log_file)
 
 
+class SystemSettings(bpy.types.PropertyGroup):
+    """ Define add-on system settings. """
+
+    logging.debug("Instantiating SystemSettings...")
+
+    is_system_enabled = bpy.props.BoolProperty()
+
+
 class MainPanel(bpy.types.Panel):
     """Create a Panel in the Render properties window."""
 
@@ -35,12 +43,14 @@ def register():
     logging.debug("Registering classes...")
 
     bpy.utils.register_class(MainPanel)
+    bpy.utils.register_class(SystemSettings)
 
 
 def unregister():
     logging.debug("Unregistering classes...")
 
     bpy.utils.unregister_class(MainPanel)
+    bpy.utils.unregister_class(SystemSettings)
 
 
 if __name__ == "__main__":
