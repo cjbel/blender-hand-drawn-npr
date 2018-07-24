@@ -34,8 +34,14 @@ class MainPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "render"
 
+    def draw_header(self, context):
+        logging.debug("Drawing MainPanel header...")  # Called frequently during normal use, consider omitting this.
+
+        self.layout.prop(context.scene.system_settings, "is_system_enabled", text="")
+
     def draw(self, context):
-        logging.debug("Drawing MainPanel...")  # draw() is called frequently during normal use, consider omitting this.
+        logging.debug("Drawing MainPanel...")  # Called frequently during normal use, consider omitting this.
+
         self.layout.label(text="Lorem ipsum dolor sit amet...")
 
 

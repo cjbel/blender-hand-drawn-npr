@@ -24,11 +24,13 @@ class Tests(unittest.TestCase):
 
     def test_system_settings_registered(self):
         """ Test that the System Settings have been registered. """
-        pass
+        property_group_name = "system_settings"
+        self.assertTrue(hasattr(bpy.types.Scene, property_group_name))
 
     def test_system_checkbox(self):
         """ Test that the checkbox which enables/disables the system is present. """
-        pass
+        property_name = "is_system_enabled"
+        self.assertTrue(hasattr(bpy.context.scene.system_settings, property_name))
 
     def test_pre_render_hooks(self):
         """ Test that pre-render handlers have been registered. """
