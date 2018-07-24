@@ -1,9 +1,18 @@
 language: python
+
 sudo: enabled
+
 before_install:
 - sudo apt-get update -qq
 - sudo apt-get install -qq blender
+
+install:
+- wget http://download.blender.org/release/Blender2.79/blender-2.79-linux-glibc219-x86_64.tar.bz2
+- tar -xf blender-2.79-linux-glibc219-x86_64.tar.bz2
+- mv blender-2.79-linux-glibc219-x86_64 blender
+- BLENDER_EXEC=$(pwd)/blender/blender
+
 script:
 - cd $TRAVIS_BUILD_DIR
-- blender -b -P install_addon.py -noaudio
-- ./run_tests.sh
+- $BLENDER_EXEC -b -P install_addon.py -noaudio
+- $BLENDER_EXEC -b -P tests/tests.py -noaudio
