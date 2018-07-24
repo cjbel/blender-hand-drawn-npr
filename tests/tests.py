@@ -48,7 +48,10 @@ class Tests(unittest.TestCase):
         """ Test that a render pass gets written to disk after render. """
         image_filename = os.path.join(tempfile.gettempdir(), "DiffDir0001.png")
         # Remove any old versions.
-        os.remove(image_filename)
+        try:
+            os.remove(image_filename)
+        except FileNotFoundError:
+            pass
         bpy.context.scene.system_settings.is_system_enabled = True
         bpy.context.scene.cycles.samples = 1
         bpy.ops.render.render()
