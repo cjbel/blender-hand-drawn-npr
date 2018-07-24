@@ -5,7 +5,10 @@ import logging
 from bpy.app.handlers import persistent
 
 # Log to a temporary directory in a platform-independent way.
-log_file = os.path.join(tempfile.gettempdir(), "hand_drawn_npr.log")
+temp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "var")
+log_file = os.path.join(temp_dir, "hand_drawn_npr.log")
+
+# log_file = os.path.join("var/", "hand_drawn_npr.log")
 logging.basicConfig(level=logging.DEBUG,
                     format="%(asctime)s %(levelname)s %(message)s",
                     filename=log_file,
@@ -77,7 +80,7 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
         file_out_node.location = 300, 0
 
         # Configure image path.
-        file_out_node.base_path = tempfile.gettempdir()
+        file_out_node.base_path = temp_dir
 
         # Configure outputs and link nodes.
         file_out_node.file_slots.clear()

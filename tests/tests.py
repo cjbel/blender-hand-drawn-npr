@@ -1,12 +1,12 @@
 import unittest
 import bpy
-import tempfile
 import os
 
 
 class Tests(unittest.TestCase):
 
     addon_name = "hand_drawn_npr"
+    temp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../blender_hand_drawn_npr/var")
 
     def setUp(self):
         bpy.ops.wm.addon_enable(module=self.addon_name)
@@ -46,7 +46,7 @@ class Tests(unittest.TestCase):
 
     def test_pass_output(self):
         """ Test that a render pass gets written to disk after render. """
-        image_filename = os.path.join(tempfile.gettempdir(), "DiffDir0001.png")
+        image_filename = os.path.join(self.temp_dir, "DiffDir0001.png")
         # Remove any old versions.
         os.remove(image_filename)
         bpy.context.scene.system_settings.is_system_enabled = True
