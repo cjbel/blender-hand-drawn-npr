@@ -44,6 +44,7 @@ def register():
 
     bpy.utils.register_class(MainPanel)
     bpy.utils.register_class(SystemSettings)
+    bpy.types.Scene.system_settings = bpy.props.PointerProperty(type=SystemSettings)
 
 
 def unregister():
@@ -51,6 +52,7 @@ def unregister():
 
     bpy.utils.unregister_class(MainPanel)
     bpy.utils.unregister_class(SystemSettings)
+    del bpy.types.Scene.system_settings
 
 
 if __name__ == "__main__":

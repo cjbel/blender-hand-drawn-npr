@@ -12,7 +12,7 @@ class Tests(unittest.TestCase):
     def tearDown(self):
         bpy.ops.wm.addon_disable(module=self.addon_name)
 
-    def test_registered(self):
+    def test_addon_registered(self):
         """ Test that the add-on is registered. """
         active_addons = bpy.context.user_preferences.addons
         self.assertTrue(self.addon_name in active_addons)
@@ -21,6 +21,10 @@ class Tests(unittest.TestCase):
         """ Test that the main panel is registered. """
         panel_idname = "RENDER_PT_hdn_main_panel"
         self.assertTrue(hasattr(bpy.types, panel_idname))
+
+    def test_system_settings_registered(self):
+        """ Test that the System Settings have been registered. """
+        pass
 
     def test_system_checkbox(self):
         """ Test that the checkbox which enables/disables the system is present. """
