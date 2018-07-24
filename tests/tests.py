@@ -36,9 +36,11 @@ class Tests(unittest.TestCase):
         """ Test that pre-render handlers have been registered. """
         pass
 
-    def test_post_render_hooks(self):
-        """ Test that post-render handlers have been registered. """
-        pass
+    def test_post_render_hook_process_illustration(self):
+        """ Test that process_illustration gets registered as a post-render hook upon enabling the System. """
+        handler_name = "process_illustration"
+        bpy.context.scene.system_settings.is_system_enabled = True
+        self.assertTrue(handler_name in str(bpy.app.handlers.render_post))
 
 
 # Ref: https://wiki.blender.org/wiki/Tools/Tests/Python

@@ -2,6 +2,7 @@ import bpy
 import os
 import tempfile
 import logging
+from bpy.app.handlers import persistent
 
 # Log to a temporary directory in a platform-independent way.
 log_file = os.path.join(tempfile.gettempdir(), "hand_drawn_npr.log")
@@ -15,13 +16,40 @@ bl_info = {"name": "Hand Drawn NPR", "category": "Render"}
 print(bl_info["name"] + " logging path: " + log_file)
 
 
+@persistent
+def process_illustration(dummy):
+    logging.debug("Processing illustration...")
+
+
 def toggle_system(self, context):
     if context.scene.system_settings.is_system_enabled:
         logging.debug("Enabling system...")
-        # Register pre and post-render hooks here.
+        bpy.ops.wm.create_npr_compositor_nodes()
+        bpy.app.handlers.render_post.append(process_illustration)
     else:
         logging.debug("Disabling system...")
-        # Unregister pre and post-render hooks here.
+        bpy.ops.wm.destroy_npr_compositor_nodes()
+        bpy.app.handlers.render_post.remove(process_illustration)
+
+
+class CreateCompositorNodeOperator(bpy.types.Operator):
+    bl_idname = "wm.create_npr_compositor_nodes"
+    bl_label = "Create compositor nodes to write render passes to disk."
+
+    def execute(self, context):
+        logging.debug("Executing CreateCompositorNodeOperator...")
+
+        return {'FINISHED'}
+
+
+class DestroyCompositorNodeOperator(bpy.types.Operator):
+    bl_idname = "wm.destroy_npr_compositor_nodes"
+    bl_label = "Destroy compositor nodes to write render passes to disk."
+
+    def execute(self, context):
+        logging.debug("Executing DestroyCompositorNodeOperator...")
+
+        return {'FINISHED'}
 
 
 class SystemSettings(bpy.types.PropertyGroup):
@@ -47,12 +75,12 @@ class MainPanel(bpy.types.Panel):
     bl_context = "render"
 
     def draw_header(self, context):
-        logging.debug("Drawing MainPanel header...")  # Called frequently during normal use, consider omitting this.
+        logging.debug("Drawing MainPanel header...")
 
         self.layout.prop(context.scene.system_settings, "is_system_enabled", text="")
 
     def draw(self, context):
-        logging.debug("Drawing MainPanel...")  # Called frequently during normal use, consider omitting this.
+        logging.debug("Drawing MainPanel...")
 
         self.layout.label(text="Lorem ipsum dolor sit amet...")
 
@@ -60,6 +88,8 @@ class MainPanel(bpy.types.Panel):
 def register():
     logging.debug("Registering classes...")
 
+    bpy.utils.register_class(CreateCompositorNodeOperator)
+    bpy.utils.register_class(DestroyCompositorNodeOperator)
     bpy.utils.register_class(MainPanel)
     bpy.utils.register_class(SystemSettings)
     bpy.types.Scene.system_settings = bpy.props.PointerProperty(type=SystemSettings)
@@ -68,6 +98,8 @@ def register():
 def unregister():
     logging.debug("Unregistering classes...")
 
+    bpy.utils.unregister_class(CreateCompositorNodeOperator)
+    bpy.utils.unregister_class(DestroyCompositorNodeOperator)
     bpy.utils.unregister_class(MainPanel)
     bpy.utils.unregister_class(SystemSettings)
     del bpy.types.Scene.system_settings
