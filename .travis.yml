@@ -5,5 +5,5 @@ before_install:
 - sudo apt-get install -qq blender
 script:
 - cd $TRAVIS_BUILD_DIR
-- blender -b -P install_addon.py
+- blender -b -P install_addon.py -noaudio
 - ./run_tests.sh
