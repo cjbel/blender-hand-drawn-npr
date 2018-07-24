@@ -1,5 +1,7 @@
 import unittest
 import bpy
+import tempfile
+import os
 
 
 class Tests(unittest.TestCase):
@@ -41,6 +43,16 @@ class Tests(unittest.TestCase):
         handler_name = "process_illustration"
         bpy.context.scene.system_settings.is_system_enabled = True
         self.assertTrue(handler_name in str(bpy.app.handlers.render_post))
+
+    def test_pass_output(self):
+        """ Test that a render pass gets written to disk after render. """
+        image_filename = os.path.join(tempfile.gettempdir(), "DiffDir0001.png")
+        # Remove any old versions.
+        os.remove(image_filename)
+        bpy.context.scene.system_settings.is_system_enabled = True
+        bpy.context.scene.cycles.samples = 1
+        bpy.ops.render.render()
+        self.assertTrue(os.path.isfile(image_filename))
 
 
 # Ref: https://wiki.blender.org/wiki/Tools/Tests/Python

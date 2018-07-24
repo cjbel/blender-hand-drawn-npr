@@ -15,6 +15,15 @@ bl_info = {"name": "Hand Drawn NPR", "category": "Render"}
 
 print(bl_info["name"] + " logging path: " + log_file)
 
+# Define expected render passes.
+pass_names = [
+    "Depth",
+    "Normal",
+    "UV",
+    "AO",
+    "IndexOB",
+    "DiffDir"
+]
 
 @persistent
 def process_illustration(dummy):
@@ -24,11 +33,26 @@ def process_illustration(dummy):
 def toggle_system(self, context):
     if context.scene.system_settings.is_system_enabled:
         logging.debug("Enabling system...")
+
+        bpy.context.scene.render.engine = "CYCLES"  # TODO: Do we really want to force this change on the User here?
+
+        # TODO: Consider making the layer selectable by the User in the GUI, rather than assuming this here.
+        layer = bpy.context.scene.render.layers["RenderLayer"]
+        logging.debug("Configuring passes for " + layer.name)
+        layer.use_pass_normal = True
+        layer.use_pass_uv = True
+        layer.use_pass_object_index = True
+        layer.use_pass_z = True
+        layer.use_pass_diffuse_direct = True
+        layer.use_pass_ambient_occlusion = True
         bpy.ops.wm.create_npr_compositor_nodes()
+
         bpy.app.handlers.render_post.append(process_illustration)
     else:
         logging.debug("Disabling system...")
+
         bpy.ops.wm.destroy_npr_compositor_nodes()
+
         bpy.app.handlers.render_post.remove(process_illustration)
 
 
@@ -38,6 +62,29 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
 
     def execute(self, context):
         logging.debug("Executing CreateCompositorNodeOperator...")
+
+        context.scene.use_nodes = True
+        tree = bpy.context.scene.node_tree
+
+        # Remove all nodes. TODO: It would be better to save the User's current tree, then we can revert back to it.
+        for node in tree.nodes:
+            tree.nodes.remove(node)
+
+        # Create nodes.
+        render_layer_node = tree.nodes.new(type="CompositorNodeRLayers")
+        render_layer_node.location = 0, 0
+        file_out_node = tree.nodes.new(type="CompositorNodeOutputFile")
+        file_out_node.location = 300, 0
+
+        # Configure image path.
+        file_out_node.base_path = tempfile.gettempdir()
+
+        # Configure outputs and link nodes.
+        file_out_node.file_slots.clear()
+        links = tree.links
+        for pass_name in pass_names:
+            file_out_node.file_slots.new(name=pass_name)
+            links.new(render_layer_node.outputs[pass_name], file_out_node.inputs[pass_name])
 
         return {'FINISHED'}
 
