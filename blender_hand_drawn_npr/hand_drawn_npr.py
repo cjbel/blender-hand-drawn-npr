@@ -15,12 +15,24 @@ bl_info = {"name": "Hand Drawn NPR", "category": "Render"}
 print(bl_info["name"] + " logging path: " + log_file)
 
 
+def toggle_system(self, context):
+    if context.scene.system_settings.is_system_enabled:
+        logging.debug("Enabling system...")
+        # Register pre and post-render hooks here.
+    else:
+        logging.debug("Disabling system...")
+        # Unregister pre and post-render hooks here.
+
+
 class SystemSettings(bpy.types.PropertyGroup):
     """ Define add-on system settings. """
 
     logging.debug("Instantiating SystemSettings...")
 
-    is_system_enabled = bpy.props.BoolProperty()
+    is_system_enabled = bpy.props.BoolProperty(name="Enable",
+                                               description="Draw stylised strokes using Hand Drawn NPR.",
+                                               default=False,
+                                               update=toggle_system)
 
 
 class MainPanel(bpy.types.Panel):
