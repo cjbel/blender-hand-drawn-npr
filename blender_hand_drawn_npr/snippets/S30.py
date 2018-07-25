@@ -5,6 +5,8 @@ Prototype code related to S30, needs to be refactored/structured into project.
 import numpy as np
 from skimage import feature, io, filters, img_as_uint, measure, draw, img_as_float
 import rdp
+import splipy
+from svgpathtools import parse_path, wsvg
 
 
 def show(image):
@@ -92,6 +94,43 @@ def vectorise_image(coords, dim, image_file):
     drawing.save()
 
 
+def to_svg_path(coords):
+    import svgwrite
+
+    drawing = svgwrite.Drawing("/tmp/img/dummy.svg", (99999, 99999))
+    path = drawing.path(stroke='black', stroke_width=1, fill='none')
+
+    for n, coord in enumerate(coords):
+        if n == 0:
+            path.push('M', coord[1], coord[0])
+        else:
+            path.push('L', coord[1], coord[0])
+
+    return path.commands
+
+
+def offset_curve(path, offset_distance, steps=10):
+    from svgpathtools import Line, Path
+
+    """Takes in a Path object, `path`, and a distance,
+    `offset_distance`, and outputs an piecewise-linear approximation
+    of the 'parallel' offset curve."""
+    # Ref (verbatim): https://github.com/mathandy/svgpathtools#compatibility-notes-for-users-of-svgpath-v20
+    nls = []
+    for seg in path:
+        for k in range(steps):
+            t = k / float(steps)
+            offset_vector = offset_distance * seg.normal(t)
+            nl = Line(seg.point(t), seg.point(t) + offset_vector)
+            nls.append(nl)
+    connect_the_dots = [Line(nls[k].end, nls[k + 1].end) for k in range(len(nls) - 1)]
+    if path.isclosed():
+        connect_the_dots.append(Line(nls[-1].end, nls[0].end))
+    offset_path = Path(*connect_the_dots)
+
+    return offset_path
+
+
 if __name__ == "__main__":
     raster_image = read_image("/tmp/img/IndexOB0001.png")
     # raster_image = dummy_image()
@@ -102,8 +141,9 @@ if __name__ == "__main__":
 
     # Convert approximations to pixel values (nearest integer).
     edge_points = np.round(edge_points).astype(np.int)
+    # vectorise_image(edge_points, raster_image.shape, "/tmp/img/out_unoptimised.svg")
 
-    # Optimise (Ramer-Douglas-Peucker).
+    # # Optimise (Ramer-Douglas-Peucker).
     edge_points = rdp.rdp(edge_points, epsilon=1)  # Still get quite good results with this high
     raster_point_render = draw_points(edge_points, raster_image.shape)
     show(raster_point_render)
@@ -112,4 +152,17 @@ if __name__ == "__main__":
     write_image(raster_render, "/tmp/img/out.png")
     show(raster_render)
 
-    vectorise_image(edge_points, raster_image.shape, "/tmp/img/out.svg")
+    # vectorise_image(edge_points, raster_image.shape, "/tmp/img/out.svg")
+
+    outer_path_commands = to_svg_path(edge_points)
+    outer_path_commands.remove(None)
+    outer_path_commands = ','.join(map(str, outer_path_commands))
+
+    inner_path_commands = to_svg_path(edge_points)
+    inner_path_commands.remove(None)
+    inner_path_commands = ','.join(map(str, inner_path_commands))
+
+    outer_path = offset_curve(parse_path(outer_path_commands), 1)
+    inner_path = offset_curve(parse_path(inner_path_commands), -1)
+
+    wsvg([outer_path, inner_path], filename='/tmp/offset_curves.svg')
