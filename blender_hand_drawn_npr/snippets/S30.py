@@ -7,6 +7,57 @@ from skimage import feature, io, filters, img_as_uint, measure, draw, img_as_flo
 import rdp
 import splipy
 from svgpathtools import parse_path, wsvg
+import svgwrite
+import math
+
+
+class Point:
+    def __init__(self, position, depth_intensity, diffdir_intensity):
+        self.position = position
+        self.depth_intensity = depth_intensity
+        self.diffdir_intensity = diffdir_intensity
+
+
+class SimpleVectorStroke:
+
+    stroke_outline = None
+
+    def __init__(self, drawing, point_0, point_1, thickness_scale_factor=5):
+        self.drawing = drawing
+        self.points = (point_0, point_1)
+        self.thickess_scale_factor = thickness_scale_factor
+
+    def generate(self):
+        stroke_outline = drawing.path(stroke='black', stroke_width=0, fill='black')
+
+        # Compute vertical and horizontal distance components between points.
+        deltas = (self.points[1].position[1] - self.points[0].position[1],
+                  self.points[1].position[0] - self.points[0].position[0])
+        # Compute the Euclidean distance between points, yielding stroke length.
+        length = math.hypot(deltas[0], deltas[1])
+
+        # Define stroke thickness for each point. TODO: May be better to take a linear transform approach (see snippet).
+        t = ((1 - self.points[0].diffdir_intensity) * self.thickess_scale_factor,
+             (1 - self.points[1].diffdir_intensity) * self.thickess_scale_factor)
+
+        # Define the stroke outline.
+        stroke_outline.push('M', 0, 0)
+        stroke_outline.push('L', length, 0)
+        stroke_outline.push('A', t[1]/2, t[1]/2, 0, 1, 1, length, t[1])
+        stroke_outline.push('L', 0, t[0])
+        stroke_outline.push('A', t[0]/2, t[0]/2, 0, 1, 1, 0, 0)
+        stroke_outline.push('Z')
+
+        # Translation.
+        x_trans = self.points[0].position[1]
+        y_trans = self.points[0].position[0] - t[0]/2
+        stroke_outline.translate(x_trans, y_trans)
+
+        # Rotation.
+        angle = math.degrees(math.atan2(deltas[1], deltas[0]))
+        stroke_outline.rotate(angle, (0, t[0]/2))  # Center of rotation is relative to the original (0, 0).
+
+        drawing.add(stroke_outline)
 
 
 def show(image):
@@ -133,36 +184,42 @@ def offset_curve(path, offset_distance, steps=10):
 
 if __name__ == "__main__":
     raster_image = read_image("/tmp/img/IndexOB0001.png")
+    # depth_image = read_image("/tmp/img/Depth0001.png")
+    depth_image = read_image("/tmp/img/Depth0001NORM.png")
+    diffdir_image = read_image("/tmp/img/DiffDir0001.png")
     # raster_image = dummy_image()
-    show(raster_image)
+    # show(raster_image)
 
     # Get the first contour group (seems good enough).
-    edge_points = path_trace(raster_image)[0]
+    edge_coords = path_trace(raster_image)[0]
+    # # Convert approximations to pixel values (nearest integer).
+    edge_coords = np.round(edge_coords).astype(np.int)
 
-    # Convert approximations to pixel values (nearest integer).
-    edge_points = np.round(edge_points).astype(np.int)
-    # vectorise_image(edge_points, raster_image.shape, "/tmp/img/out_unoptimised.svg")
+    # Optimise points (Ramer-Douglas-Peucker).
+    edge_coords = rdp.rdp(edge_coords, epsilon=1)  # Still get quite good results with this high
 
-    # # Optimise (Ramer-Douglas-Peucker).
-    edge_points = rdp.rdp(edge_points, epsilon=1)  # Still get quite good results with this high
-    raster_point_render = draw_points(edge_points, raster_image.shape)
-    show(raster_point_render)
+    # Create a list of unique Points, preserving the original order.
+    points = []
+    seen = set()
+    for coord in edge_coords:
+        r, c = coord[0], coord[1]
+        if (r, c) not in seen:
+            seen.add((r, c))
 
-    raster_render = draw_lines(edge_points, raster_image.shape)
-    write_image(raster_render, "/tmp/img/out.png")
-    show(raster_render)
+            depth_intensity = depth_image[r, c]
+            diffdir_intensity = diffdir_image[r, c]
+            point = Point((r, c), depth_intensity, diffdir_intensity)
+            points.append(point)
 
-    # vectorise_image(edge_points, raster_image.shape, "/tmp/img/out.svg")
+    # Prepare the vector canvas.
+    drawing = svgwrite.Drawing("/tmp/img/vector_rendering.svg", (raster_image.shape[1], raster_image.shape[0]))
 
-    outer_path_commands = to_svg_path(edge_points)
-    outer_path_commands.remove(None)
-    outer_path_commands = ','.join(map(str, outer_path_commands))
+    # Create vector strokes.
+    for i in range(0, len(points)):
+        if i != len(points) - 1:
+            stroke = SimpleVectorStroke(drawing, points[i], points[i + 1])
+        else:
+            stroke = SimpleVectorStroke(drawing, points[i], points[0])
+        stroke.generate()
 
-    inner_path_commands = to_svg_path(edge_points)
-    inner_path_commands.remove(None)
-    inner_path_commands = ','.join(map(str, inner_path_commands))
-
-    outer_path = offset_curve(parse_path(outer_path_commands), 1)
-    inner_path = offset_curve(parse_path(inner_path_commands), -1)
-
-    wsvg([outer_path, inner_path], filename='/tmp/offset_curves.svg')
+    drawing.save()
