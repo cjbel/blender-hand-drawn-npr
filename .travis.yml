@@ -14,11 +14,10 @@ install:
 - wget http://download.blender.org/release/Blender2.79/blender-2.79-linux-glibc219-x86_64.tar.bz2
 - tar -xf blender-2.79-linux-glibc219-x86_64.tar.bz2
 - BLENDER_EXEC=$(pwd)/blender-2.79-linux-glibc219-x86_64.tar.bz2/blender
+- cd $TRAVIS_BUILD_DIR
 - pip install -r requirements.txt
 
 script:
-- cd $TRAVIS_BUILD_DIR
-- pwd
 - python -m unittest discover -v
 - $BLENDER_EXEC -b -P install_addon.py -noaudio 1> /dev/null
 - $BLENDER_EXEC -b -P tests/blender_tests.py -noaudio 1> /dev/null
