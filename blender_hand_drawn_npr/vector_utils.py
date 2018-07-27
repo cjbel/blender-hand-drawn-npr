@@ -1,6 +1,7 @@
-import svgwrite
 import blender_hand_drawn_npr.point_utils as point_utils
+
 import numpy as np
+import svgwrite
 
 
 def create(image_file, width, height):
@@ -28,6 +29,9 @@ def save(drawing):
 def translate(vertices, x, y):
     """
     Translate a list of vertices by x, y.
+
+    Ref:
+    https://www.mathplanet.com/education/geometry/transformations/transformation-using-matrices
 
     :param vertices: List of vertices to be transformed (u, v).
     :param x: x-delta.
@@ -106,32 +110,41 @@ def draw_straight_stroke(p0, p1, thk_factor, drawing):
     :return: None
     """
 
-    # Define the basic outline properties.
-    stroke_outline = drawing.path(stroke='black', stroke_width=0, fill='black')
-
-    # Compute the Euclidean distance between points, yielding stroke length.
+    # Compute the stroke length.
     length = point_utils.euclidean_dist(p0, p1)
 
     # Define stroke thickness for each point. TODO: May be better to take a linear transform approach (see snippet).
     t0 = point_utils.thickness_diffdir(p0, thk_factor)
     t1 = point_utils.thickness_diffdir(p1, thk_factor)
 
-    # TODO: Apply translations before creating SVG paths.
-    # Define a parameterised stroke outline, 2D straight stroke with rounded ends.
-    stroke_outline.push('M', 0, 0)
-    stroke_outline.push('L', length, 0)
-    stroke_outline.push('A', t1 / 2, t1 / 2, 0, 1, 1, length, t1)
-    stroke_outline.push('L', 0, t0)
-    stroke_outline.push('A', t0 / 2, t0 / 2, 0, 1, 1, 0, 0)
-    stroke_outline.push('Z')
+    # Define the parameterised stroke outline.
+    # With the center of the leftmost end-cap taken as (0, 0), a 2D straight stroke with rounded ends can be modelled
+    # as four vertices as follows.
+    vertices = [(0, t0 / 2),
+                (length, t1 / 2),
+                (length, -t1 / 2),
+                (0, -t0 / 2)]
 
     # Translate to p0.
-    x_trans = p0.x
-    y_trans = p0.y - t0 / 2
-    stroke_outline.translate(x_trans, y_trans)
+    vertices = translate(vertices, p0.x, p0.y)
 
     # Rotate around p0 to achieve final position.
     angle = point_utils.heading(p0, p1)
-    stroke_outline.rotate(angle, (0, t0 / 2))  # Center of rotation is relative to the original (0, 0).
+    vertices = rotate_about_xy(vertices, p0.x, p0.y, angle)
+
+    # Define the basic outline properties.
+    stroke_outline = drawing.path(stroke='black', stroke_width=0, fill='black')
+
+    # Create the SVG path.
+    # Top edge.
+    stroke_outline.push('M', vertices[0][0], vertices[0][1])
+    stroke_outline.push('L', vertices[1][0], vertices[1][1])
+    # Rightmost endcap.
+    stroke_outline.push('A', t1 / 2, t1 / 2, 0, 0, 0, vertices[2][0], vertices[2][1])
+    # Bottom edge.
+    stroke_outline.push('L', vertices[3][0], vertices[3][1])
+    # Leftmost endcap.
+    stroke_outline.push('A', t0 / 2, t0 / 2, 0, 0, 0, vertices[0][0], vertices[0][1])
+    stroke_outline.push('Z')
 
     drawing.add(stroke_outline)
