@@ -14,6 +14,7 @@ install:
 - wget http://download.blender.org/release/Blender2.79/blender-2.79-linux-glibc219-x86_64.tar.bz2
 - tar -xf blender-2.79-linux-glibc219-x86_64.tar.bz2
 - BLENDER_EXEC=$(pwd)/blender-2.79-linux-glibc219-x86_64.tar.bz2/blender
+- pip list
 
 script:
 - cd $TRAVIS_BUILD_DIR
