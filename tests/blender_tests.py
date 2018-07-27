@@ -3,8 +3,13 @@ import bpy
 import tempfile
 import os
 
+"""
+Note: Module name intentionally doesnt start with "test_", as we don't want the unittest runner to
+run these tests (they must be run from within Blender). 
+"""
 
-class Tests(unittest.TestCase):
+
+class BlenderTests(unittest.TestCase):
 
     addon_name = "hand_drawn_npr"
 

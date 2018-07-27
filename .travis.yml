@@ -15,5 +15,6 @@ install:
 
 script:
 - cd $TRAVIS_BUILD_DIR
-- $BLENDER_EXEC -b -P install_addon.py -noaudio
-- $BLENDER_EXEC -b -P tests/tests.py -noaudio
+- python -m unittest discover -v
+- $BLENDER_EXEC -b -P install_addon.py -noaudio 1> /dev/null
+- $BLENDER_EXEC -b -P tests/blender_tests.py -noaudio 1> /dev/null
