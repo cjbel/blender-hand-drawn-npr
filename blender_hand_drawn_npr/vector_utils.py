@@ -25,6 +25,31 @@ def save(drawing):
     drawing.save()
 
 
+def translate(vertices, x, y):
+    """
+    Translate a list of vertices by x, y.
+
+    :param vertices: List of vertices to be transformed (u, v).
+    :param x: x-delta.
+    :param y: y-delta.
+    :return: Transformed list of vertices (u, v).
+    """
+
+    # Unpack provided vertices into matrix form.
+    v = np.matrix([[v[0] for v in vertices],
+                   [v[1] for v in vertices]])
+
+    # Define translation matrix.
+    t = np.matrix([[x],
+                   [y]])
+
+    # Perform the transform.
+    transform = v + t
+
+    # Transpose the result to attain the same format as the original function argument, and return.
+    return np.array(transform.T)
+
+
 def rotate_about_xy(vertices, x, y, angle):
     """
     Rotate a list of vertices about center x, y.
@@ -64,10 +89,10 @@ def rotate_about_xy(vertices, x, y, angle):
     transform = t_1 * r * t_2 * v
 
     # The last row does not contain useful data, so discard it.
-    new_vertices = transform[:-1]
+    transform = transform[:-1]
 
     # Transpose the result to attain the same format as the original function argument, and return.
-    return np.array(new_vertices.T)
+    return np.array(transform.T)
 
 
 def draw_straight_stroke(p0, p1, thk_factor, drawing):

@@ -158,3 +158,13 @@ class TestVectorUtils(unittest.TestCase):
         vertices = [[-1, -1]]
         rotated_vertices = np.round(rotate_about_xy(vertices, -2, -2, 90))
         self.assertSequenceEqual([[-3, -1]], rotated_vertices.tolist())
+
+    def test_translate_1(self):
+        vertices = [[1, 1]]
+        translated_vertices = translate(vertices, 2, 2)
+        self.assertSequenceEqual([[3, 3]], translated_vertices.tolist())
+
+    def test_translate_2(self):
+        vertices = [[1, 1]]
+        translated_vertices = translate(vertices, -2, -2)
+        self.assertSequenceEqual([[-1, -1]], translated_vertices.tolist())
