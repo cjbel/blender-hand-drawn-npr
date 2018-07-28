@@ -12,22 +12,19 @@ before_install:
 - sudo apt-get install -qq blender
 
 install:
-# Aquire Blender version 2.79.
+# Aquire Blender version 2.79 and bind executable to env variable.
 - cd ~
 - wget http://download.blender.org/release/Blender2.79/blender-2.79-linux-glibc219-x86_64.tar.bz2
 - tar -xf blender-2.79-linux-glibc219-x86_64.tar.bz2
 - BLENDER_EXEC=$(pwd)/blender-2.79-linux-glibc219-x86_64/blender
-# Run Blender headless to set up initial config dirs.
-- $BLENDER_EXEC -b
-- cd $TRAVIS_BUILD_DIR
 # Install add-on dependencies.
 - pip install -r requirements.txt
-# Make the add-on module visible on Blender's Python path.
-- ln -s ~/build/cjbel/blender-hand-drawn-npr/blender_hand_drawn_npr ~/.config/blender/2.79/scripts/addons/
+# Prepare the add-on for installation.
+- cd $TRAVIS_BUILD_DIR
+- zip -r blender_hand_drawn_npr.zip blender_hand_drawn_npr
+# Install the add-on.
 - $BLENDER_EXEC -b -P install_addon.py -noaudio 1> /dev/null
 
 script:
-# Run Blender-independent tests.
-- python -m unittest discover -v
-# Run Blender-dependent tests.
-- $BLENDER_EXEC -b -P tests/blender_tests.py -noaudio 1> /dev/null
+# Run tests.
+- $BLENDER_EXEC -b -P tests/tests.py -noaudio 1> /dev/null
