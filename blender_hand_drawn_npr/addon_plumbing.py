@@ -28,7 +28,11 @@ pass_names = [
 @persistent
 def process_illustration(dummy):
     logging.debug("Processing illustration...")
-    illustrator = illustrate.Illustrator(tempfile.gettempdir())
+    try:
+        illustrator = illustrate.Illustrator(tempfile.gettempdir())
+    except AttributeError:
+        return
+
     illustrator.illustrate_silhouette()
     illustrator.illustrate_internal_edges()
     illustrator.save()
