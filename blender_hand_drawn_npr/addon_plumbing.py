@@ -2,11 +2,14 @@ if "bpy" in locals():
     print("Reloading modules.")
     import importlib
     importlib.reload(illustrate)
-    print("Reloaded modules.")
 else:
     print("Importing modules.")
-    from . import illustrate
-    print("Imported modules.")
+    try:
+        from . import illustrate
+    except (AttributeError, ImportError):
+        # This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
+        # This is fine, since only the internal Blender functionality is tested.
+        pass
 
 import bpy
 import os
@@ -30,7 +33,9 @@ def process_illustration(dummy):
     logging.debug("Processing illustration...")
     try:
         illustrator = illustrate.Illustrator(tempfile.gettempdir())
-    except AttributeError:
+    except (NameError):
+        # This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
+        # Bail out here, since only the internal Blender functionality is tested.
         return
 
     illustrator.illustrate_silhouette()
