@@ -16,8 +16,9 @@ install:
 - BLENDER_EXEC=$(pwd)/blender-2.79-linux-glibc219-x86_64/blender
 - cd $TRAVIS_BUILD_DIR
 - pip install -r requirements.txt
+- ln -s ~/build/cjbel/blender-hand-drawn-npr/blender_hand_drawn_npr ~/.config/blender/2.79/scripts/addons/
+- $BLENDER_EXEC -b -P install_addon.py -noaudio 1> /dev/null
 
 script:
 - python -m unittest discover -v
-- $BLENDER_EXEC -b -P install_addon.py -noaudio 1> /dev/null
 - $BLENDER_EXEC -b -P tests/blender_tests.py -noaudio 1> /dev/null
