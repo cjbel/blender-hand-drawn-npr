@@ -11,4 +11,4 @@ ln -s /usr/share/blender/2.79/scripts/modules/bpy ~/workspace/blender-hand-drawn
 ln -s /usr/share/blender/2.79/scripts/modules/bpy_extras ~/workspace/blender-hand-drawn-npr/venv/lib/python3.6/site-packages/
 
 # Install required packages to Blender python environment (for use inside of Blender).
-    sudo pip install -r requirements.txt --target=/usr/share/blender/2.79/scripts/modules
+sudo pip install -r requirements.txt --target=/usr/share/blender/2.79/scripts/modules

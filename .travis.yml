@@ -10,6 +10,7 @@ before_install:
 # The Blender version in the repos is old, but use apt-get to grab the Blender system dependencies.
 - sudo apt-get update -qq
 - sudo apt-get install -qq blender
+- sudo apt-get install -qq python-matplotlib python-numpy python-pil python-scipy
 
 install:
 # Aquire Blender version 2.79 and bind executable to env variable.
