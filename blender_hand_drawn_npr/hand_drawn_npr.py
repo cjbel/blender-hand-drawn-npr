@@ -3,6 +3,7 @@ import os
 import tempfile
 import logging
 from bpy.app.handlers import persistent
+from blender_hand_drawn_npr import illustrate
 
 # Log to a temporary directory in a platform-independent way.
 log_file = os.path.join(tempfile.gettempdir(), "hand_drawn_npr.log")
@@ -25,9 +26,13 @@ pass_names = [
     "DiffDir"
 ]
 
+
 @persistent
 def process_illustration(dummy):
     logging.debug("Processing illustration...")
+    illustrator = illustrate.Illustrator(tempfile.gettempdir())
+    illustrator.illustrate_silhouette()
+    illustrator.save()
 
 
 def toggle_system(self, context):

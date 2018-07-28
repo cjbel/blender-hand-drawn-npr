@@ -116,20 +116,12 @@ class TestPointUtils(unittest.TestCase):
         self.assertEqual(-90, heading(p0, p1))
 
     def test_thickness_depth(self):
-        """ Test value is correctly computed. """
         p = create_point(0, 0, 0.2, 0)
         self.assertAlmostEqual(8, thickness_depth(p, 10))
 
     def test_thickness_diffdir(self):
-        """ Test value is correctly computed. """
         p = create_point(0, 0, 0, 0.2)
         self.assertAlmostEqual(8, thickness_diffdir(p, 10))
-
-
-class TestRasterUtils(unittest.TestCase):
-
-    def test_thing(self):
-        pass
 
 
 class TestVectorUtils(unittest.TestCase):
