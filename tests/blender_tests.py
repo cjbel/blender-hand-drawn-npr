@@ -1,6 +1,3 @@
-from blender_hand_drawn_npr.point_utils import *
-from blender_hand_drawn_npr.vector_utils import *
-
 import unittest
 import os
 import tempfile
