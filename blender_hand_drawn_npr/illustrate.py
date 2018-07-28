@@ -72,11 +72,14 @@ class Illustrator:
                 # Draw a Stroke back to the original Point to close the path.
                 vector_utils.draw_straight_stroke(points[i], points[0], f, self.illustration)
 
+    def illustrate_internal_edges(self):
+        pass
+
     def save(self):
         vector_utils.save(self.illustration)
 
 
 if __name__ == "__main__":
-    illustrator = Illustrator("/tmp/img")
-    illustrator.illustrate_silhouette()
+    illustrator = Illustrator("/tmp/int_edge")
+    illustrator.illustrate_internal_edges()
     illustrator.save()

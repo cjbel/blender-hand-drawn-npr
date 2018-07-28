@@ -10,7 +10,6 @@ before_install:
 # The Blender version in the repos is old, but use apt-get to grab the Blender system dependencies.
 - sudo apt-get update -qq
 - sudo apt-get install -qq blender
-#- sudo apt-get install -qq python-matplotlib python-numpy python-pil python-scipy
 
 install:
 # Aquire Blender version 2.79 and bind executable to env variable.
@@ -20,8 +19,7 @@ install:
 - BLENDER_EXEC=$(pwd)/blender-2.79-linux-glibc219-x86_64/blender
 # Install add-on dependencies.
 - cd $TRAVIS_BUILD_DIR
-- pip install Geometry --target=/home/travis/blender-2.79-linux-glibc219-x86_64/2.79/scripts/modules
-- pip install -r requirements.txt --target=/home/travis/blender-2.79-linux-glibc219-x86_64/2.79/scripts/modules
+- pip install -r requirements.txt
 # Prepare the add-on for installation.
 - zip -r blender_hand_drawn_npr.zip blender_hand_drawn_npr
 # Install the add-on.
@@ -29,5 +27,5 @@ install:
 
 script:
 # Run tests.
-# Script fails on Travis when trying to import skimage, not sure why...
-- $BLENDER_EXEC -b -P tests/tests.py -noaudio 1> /dev/null
+- python -m unittest discover -v
+- $BLENDER_EXEC -b -P tests/blender_tests.py -noaudio 1> /dev/null
