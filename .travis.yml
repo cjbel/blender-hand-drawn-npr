@@ -18,9 +18,9 @@ install:
 - tar -xf blender-2.79-linux-glibc219-x86_64.tar.bz2
 - BLENDER_EXEC=$(pwd)/blender-2.79-linux-glibc219-x86_64/blender
 # Install add-on dependencies.
+- cd $TRAVIS_BUILD_DIR
 - pip install -r requirements.txt
 # Prepare the add-on for installation.
-- cd $TRAVIS_BUILD_DIR
 - zip -r blender_hand_drawn_npr.zip blender_hand_drawn_npr
 # Install the add-on.
 - $BLENDER_EXEC -b -P install_addon.py -noaudio 1> /dev/null
