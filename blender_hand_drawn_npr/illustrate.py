@@ -7,6 +7,8 @@ import numpy as np
 import tempfile
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class Illustrator:
 
@@ -14,9 +16,12 @@ class Illustrator:
     object_image = None
     depth_image = None
     diffdir_image = None
+    normal_image = None
     illustration = None
 
     def __init__(self, img_dir):
+
+        logger.debug("Instantiating Illustrator...")
 
         self.img_dir = img_dir
         # Read render passes.
@@ -26,12 +31,14 @@ class Illustrator:
                                                                 "Depth0001.png"))
         self.diffdir_image = raster_utils.read_image(os.path.join(self.img_dir,
                                                                   "DiffDir0001.png"))
+        self.normal_image = raster_utils.read_image(os.path.join(self.img_dir,
+                                                                  "Normal0001.png"))
         # Prepare the vector illustration.
         out_file = os.path.join(self.img_dir,
                                 "vector_rendering.svg")  # TODO: Make user-configurable.
-        self.illustration = vector_utils.create(out_file,
-                                                self.object_image.shape[1],
-                                                self.object_image.shape[0])
+        self.illustration = vector_utils.create_canvas(out_file,
+                                                       self.object_image.shape[1],
+                                                       self.object_image.shape[0])
 
     def illustrate_silhouette(self):
 
@@ -40,6 +47,7 @@ class Illustrator:
             edge_coords = raster_utils.path_trace(self.object_image)[0]
         except IndexError:
             # No silhouette can be drawn if no paths are found...
+            logger.warning("No silhouette could be found.")
             return
 
         # Convert approximations to pixel values (nearest integer).
@@ -63,7 +71,7 @@ class Illustrator:
 
         # Define the thickness factor.
         f = 10  # TODO: Make user-configurable.
-        # Create vector strokes.
+        # Draw vector strokes.
         for i in range(0, len(points)):
             if i != len(points) - 1:
                 # Draw a Stroke between adjacent Points.
@@ -72,14 +80,11 @@ class Illustrator:
                 # Draw a Stroke back to the original Point to close the path.
                 vector_utils.draw_straight_stroke(points[i], points[0], f, self.illustration)
 
-    def illustrate_internal_edges(self):
-        pass
-
     def save(self):
         vector_utils.save(self.illustration)
 
 
 if __name__ == "__main__":
-    illustrator = Illustrator("/tmp/int_edge")
-    illustrator.illustrate_internal_edges()
+    illustrator = Illustrator("/tmp/cube")
+    illustrator.illustrate_silhouette()
     illustrator.save()

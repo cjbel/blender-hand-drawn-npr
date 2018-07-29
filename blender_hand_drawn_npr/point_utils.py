@@ -1,6 +1,10 @@
 import math
 from collections import namedtuple
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def create_point(x, y, depth_intensity, diffdir_intensity):
     """
@@ -17,9 +21,12 @@ def horizontal_delta(p0, p1):
 
     :param p0: Start point.
     :param p1: End point.
-    :return: Horizontal distance.
+    :return: Horizontal delta.
     """
-    return p1.x - p0.x
+    h_delta = p1.x - p0.x
+    logger.debug("Horizontal delta between %f and %f: %f", p0.x, p1.x, h_delta)
+
+    return h_delta
 
 
 def vertical_delta(p0, p1):
@@ -27,9 +34,11 @@ def vertical_delta(p0, p1):
 
     :param p0: Start point.
     :param p1: End point.
-    :return: Vertical distance.
+    :return: Vertical delta.
     """
-    return p1.y - p0.y
+    v_delta = p1.y - p0.y
+    logger.debug("Vertical delta between %f and %f: %f", p0.y, p1.y, v_delta)
+    return v_delta
 
 
 def euclidean_dist(p0, p1):
@@ -39,7 +48,9 @@ def euclidean_dist(p0, p1):
     :param p1: End point.
     :return: Euclidean distance.
     """
-    return math.hypot(horizontal_delta(p0, p1), vertical_delta(p0, p1))
+    e_dist = math.hypot(horizontal_delta(p0, p1), vertical_delta(p0, p1))
+    logger.debug("Euclidean distance between %s and %s: %f", p0, p1, e_dist)
+    return e_dist
 
 
 def heading(p0, p1):
@@ -59,7 +70,10 @@ def thickness_depth(p, factor):
     :param factor: Scale factor.
     :return: Thickness.
     """
-    return (1 - p.depth_intensity) * factor
+    thickness = (1 - p.depth_intensity) * factor
+    logger.debug("Thickness at %s, with factor %f: %f", p, factor, thickness)
+
+    return thickness
 
 
 def thickness_diffdir(p, factor):
@@ -69,6 +83,7 @@ def thickness_diffdir(p, factor):
     :param factor: Scale factor.
     :return: Thickness.
     """
-    return (1 - p.diffdir_intensity) * factor
+    thickness = (1 - p.diffdir_intensity) * factor
+    logger.debug("Thickness at %s, with factor %f: %f", p, factor, thickness)
 
-
+    return thickness

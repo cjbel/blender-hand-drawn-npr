@@ -1,21 +1,20 @@
 if "bpy" in locals():
-    print("Reloading modules.")
     import importlib
-    importlib.reload(illustrate)
 else:
-    print("Importing modules.")
     try:
         from . import illustrate
     except (AttributeError, ImportError):
+        pass
         # This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
         # This is fine, since only the internal Blender functionality is tested.
-        pass
 
 import bpy
 import os
 import tempfile
 import logging
 from bpy.app.handlers import persistent
+
+logger = logging.getLogger(__name__)
 
 # Define expected render passes.
 pass_names = [
@@ -30,7 +29,7 @@ pass_names = [
 
 @persistent
 def process_illustration(dummy):
-    logging.debug("Processing illustration...")
+    logger.debug("Processing illustration...")
     try:
         illustrator = illustrate.Illustrator(tempfile.gettempdir())
     except (NameError):
@@ -39,19 +38,18 @@ def process_illustration(dummy):
         return
 
     illustrator.illustrate_silhouette()
-    illustrator.illustrate_internal_edges()
     illustrator.save()
 
 
 def toggle_system(self, context):
     if context.scene.system_settings.is_system_enabled:
-        logging.debug("Enabling system...")
+        logger.debug("Enabling system...")
 
         bpy.context.scene.render.engine = "CYCLES"  # TODO: Do we really want to force this change on the User here?
 
         # TODO: Consider making the layer selectable by the User in the GUI, rather than assuming this here.
         layer = bpy.context.scene.render.layers["RenderLayer"]
-        logging.debug("Configuring passes for " + layer.name)
+        logger.debug("Configuring passes for " + layer.name)
         layer.use_pass_normal = True
         layer.use_pass_uv = True
         layer.use_pass_object_index = True
@@ -62,7 +60,7 @@ def toggle_system(self, context):
 
         bpy.app.handlers.render_post.append(process_illustration)
     else:
-        logging.debug("Disabling system...")
+        logger.debug("Disabling system...")
 
         bpy.ops.wm.destroy_npr_compositor_nodes()
 
@@ -74,7 +72,7 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
     bl_label = "Create compositor nodes to write render passes to disk."
 
     def execute(self, context):
-        logging.debug("Executing CreateCompositorNodeOperator...")
+        logger.debug("Executing CreateCompositorNodeOperator...")
 
         context.scene.use_nodes = True
         tree = bpy.context.scene.node_tree
@@ -107,7 +105,7 @@ class DestroyCompositorNodeOperator(bpy.types.Operator):
     bl_label = "Destroy compositor nodes to write render passes to disk."
 
     def execute(self, context):
-        logging.debug("Executing DestroyCompositorNodeOperator...")
+        logger.debug("Executing DestroyCompositorNodeOperator...")
 
         return {'FINISHED'}
 
@@ -115,7 +113,7 @@ class DestroyCompositorNodeOperator(bpy.types.Operator):
 class SystemSettings(bpy.types.PropertyGroup):
     """ Define add-on system settings. """
 
-    logging.debug("Instantiating SystemSettings...")
+    logger.debug("Instantiating SystemSettings...")
 
     is_system_enabled = bpy.props.BoolProperty(name="Enable",
                                                description="Draw stylised strokes using Hand Drawn NPR",
@@ -126,7 +124,7 @@ class SystemSettings(bpy.types.PropertyGroup):
 class MainPanel(bpy.types.Panel):
     """Create a Panel in the Render properties window."""
 
-    logging.debug("Instantiating MainPanel...")
+    logger.debug("Instantiating MainPanel...")
 
     bl_label = "Hand Drawn NPR"
     bl_idname = "RENDER_PT_hdn_main_panel"
@@ -135,18 +133,18 @@ class MainPanel(bpy.types.Panel):
     bl_context = "render"
 
     def draw_header(self, context):
-        logging.debug("Drawing MainPanel header...")
+        logger.debug("Drawing MainPanel header...")
 
         self.layout.prop(context.scene.system_settings, "is_system_enabled", text="")
 
     def draw(self, context):
-        logging.debug("Drawing MainPanel...")
+        logger.debug("Drawing MainPanel...")
 
         self.layout.label(text="Lorem ipsum dolor sit amet...")
 
 
 def register():
-    logging.debug("Registering classes...")
+    logger.debug("Registering classes...")
 
     bpy.utils.register_class(CreateCompositorNodeOperator)
     bpy.utils.register_class(DestroyCompositorNodeOperator)
@@ -156,7 +154,7 @@ def register():
 
 
 def unregister():
-    logging.debug("Unregistering classes...")
+    logger.debug("Unregistering classes...")
 
     bpy.utils.unregister_class(CreateCompositorNodeOperator)
     bpy.utils.unregister_class(DestroyCompositorNodeOperator)

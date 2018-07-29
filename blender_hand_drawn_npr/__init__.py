@@ -11,21 +11,24 @@ import tempfile
 bl_info = {"name": "Hand Drawn NPR",
            "category": "Render"}
 
-# Log to a temporary directory in a platform-independent way.
+# Log to temporary directory.
 log_file = os.path.join(tempfile.gettempdir(), "hand_drawn_npr.log")
 logging.basicConfig(level=logging.DEBUG,
-                    format="%(asctime)s %(levelname)s %(message)s",
+                    format="%(asctime)s %(name)s %(levelname)s %(message)s",
                     filename=log_file,
                     filemode="w")
+# Set log level for third party modules.
+logging.getLogger('PIL').setLevel(logging.WARNING)
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 print(bl_info["name"] + " logging path: " + log_file)
 
 
 def register():
-    from . import addon_plumbing
-    addon_plumbing.register()
+    from . import blender_controller
+    blender_controller.register()
 
 
 def unregister():
-    from . import addon_plumbing
-    addon_plumbing.unregister()
+    from . import blender_controller
+    blender_controller.unregister()

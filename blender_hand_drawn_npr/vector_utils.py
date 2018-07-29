@@ -1,10 +1,13 @@
 import blender_hand_drawn_npr.point_utils as point_utils
 
 import numpy as np
+import logging
 import svgwrite
 
+logger = logging.getLogger(__name__)
 
-def create(image_file, width, height):
+
+def create_canvas(image_file, width, height):
     """
     Create a new vector drawing.
 
@@ -13,6 +16,8 @@ def create(image_file, width, height):
     :param height: Image height.
     :return: svgwrite drawing object.
     """
+    logger.debug("Creating illustration canvas...")
+
     return svgwrite.Drawing(image_file, (width, height))
 
 
@@ -23,6 +28,8 @@ def save(drawing):
     :param drawing: Svgwrite drawing object.
     :return: None
     """
+    logger.debug("Saving illustration...")
+
     drawing.save()
 
 
@@ -38,6 +45,7 @@ def translate(vertices, x, y):
     :param y: y-delta.
     :return: Transformed list of vertices (u, v).
     """
+    logger.debug("Vertices pre-translation: %s", vertices.tolist())
 
     # Unpack provided vertices into matrix form.
     v = np.matrix([[v[0] for v in vertices],
@@ -50,8 +58,11 @@ def translate(vertices, x, y):
     # Perform the transform.
     transform = v + t
 
-    # Transpose the result to attain the same format as the original function argument, and return.
-    return np.array(transform.T)
+    # Transpose the result to attain the same format as the original function argument.
+    vertices = np.array(transform.T)
+    logger.debug("Vertices post-translation: %s", vertices.tolist())
+
+    return vertices
 
 
 def rotate_about_xy(vertices, x, y, angle):
@@ -69,6 +80,7 @@ def rotate_about_xy(vertices, x, y, angle):
     :param angle: Angle of rotation from the horizontal (x+).
     :return: Transformed list of vertices (u, v).
     """
+    logger.debug("Vertices pre-rotation: %s", vertices.tolist())
 
     # Define translation matrices.
     t_1 = np.matrix([[1, 0, x],
@@ -95,8 +107,11 @@ def rotate_about_xy(vertices, x, y, angle):
     # The last row does not contain useful data, so discard it.
     transform = transform[:-1]
 
-    # Transpose the result to attain the same format as the original function argument, and return.
-    return np.array(transform.T)
+    # Transpose the result to attain the same format as the original function argument.
+    vertices = np.array(transform.T)
+    logger.debug("Vertices post-rotation: %s", vertices.tolist())
+
+    return vertices
 
 
 def draw_straight_stroke(p0, p1, thk_factor, drawing):
@@ -109,6 +124,7 @@ def draw_straight_stroke(p0, p1, thk_factor, drawing):
     :param drawing: Svgwrite drawing object.
     :return: None
     """
+    logger.debug("Creating straight stroke from %s to %s", p0, p1)
 
     # Compute the stroke length.
     length = point_utils.euclidean_dist(p0, p1)
@@ -120,10 +136,10 @@ def draw_straight_stroke(p0, p1, thk_factor, drawing):
     # Define the parameterised stroke outline.
     # With the center of the leftmost end-cap taken as (0, 0), a 2D straight stroke with rounded ends can be modelled
     # as four vertices as follows.
-    vertices = [(0, t0 / 2),
-                (length, t1 / 2),
-                (length, -t1 / 2),
-                (0, -t0 / 2)]
+    vertices = np.array([[0, t0 / 2],
+                         [length, t1 / 2],
+                         [length, -t1 / 2],
+                         [0, -t0 / 2]])
 
     # Translate to p0.
     vertices = translate(vertices, p0.x, p0.y)
@@ -147,4 +163,5 @@ def draw_straight_stroke(p0, p1, thk_factor, drawing):
     stroke_outline.push('A', t0 / 2, t0 / 2, 0, 0, 0, vertices[0][0], vertices[0][1])
     stroke_outline.push('Z')
 
+    logger.debug("Adding stroke to canvas...")
     drawing.add(stroke_outline)
