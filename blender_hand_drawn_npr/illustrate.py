@@ -85,6 +85,6 @@ class Illustrator:
 
 
 if __name__ == "__main__":
-    illustrator = Illustrator("/tmp/cube")
+    illustrator = Illustrator("/tmp/uv_plane")
     illustrator.illustrate_silhouette()
     illustrator.save()

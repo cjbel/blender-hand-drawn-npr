@@ -1,3 +1,5 @@
 scikit-image
+imageio
+tifffile
 svgwrite
 rdp
