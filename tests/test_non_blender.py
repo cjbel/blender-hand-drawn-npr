@@ -1,6 +1,7 @@
 from blender_hand_drawn_npr.point_utils import *
 from blender_hand_drawn_npr.vector_utils import *
 
+import numpy as np
 import unittest
 import os
 import math
@@ -129,36 +130,36 @@ class TestPointUtils(unittest.TestCase):
 class TestVectorUtils(unittest.TestCase):
 
     def test_rotate_about_xy_1(self):
-        vertices = [[1, 0]]
+        vertices = np.array([[1, 0]])
         rotated_vertices = np.round(rotate_about_xy(vertices, 1, 1, 90))
         self.assertSequenceEqual([[2, 1]], rotated_vertices.tolist())
 
     def test_rotate_about_xy_2(self):
-        vertices = [[1, 0]]
+        vertices = np.array([[1, 0]])
         rotated_vertices = np.round(rotate_about_xy(vertices, 1, 1, 180))
         self.assertSequenceEqual([[1, 2]], rotated_vertices.tolist())
 
     def test_rotate_about_xy_3(self):
-        vertices = [[1, 0]]
+        vertices = np.array([[1, 0]])
         rotated_vertices = np.round(rotate_about_xy(vertices, 1, 1, 270))
         self.assertSequenceEqual([[0, 1]], rotated_vertices.tolist())
 
     def test_rotate_about_xy_4(self):
-        vertices = [[1, 0]]
+        vertices = np.array([[1, 0]])
         rotated_vertices = np.round(rotate_about_xy(vertices, 1, 1, 0))
         self.assertSequenceEqual([[1, 0]], rotated_vertices.tolist())
 
     def test_rotate_about_xy_5(self):
-        vertices = [[-1, -1]]
+        vertices = np.array([[-1, -1]])
         rotated_vertices = np.round(rotate_about_xy(vertices, -2, -2, 90))
         self.assertSequenceEqual([[-3, -1]], rotated_vertices.tolist())
 
     def test_translate_1(self):
-        vertices = [[1, 1]]
+        vertices = np.array([[1, 1]])
         translated_vertices = translate(vertices, 2, 2)
         self.assertSequenceEqual([[3, 3]], translated_vertices.tolist())
 
     def test_translate_2(self):
-        vertices = [[1, 1]]
+        vertices = np.array([[1, 1]])
         translated_vertices = translate(vertices, -2, -2)
         self.assertSequenceEqual([[-1, -1]], translated_vertices.tolist())

@@ -58,6 +58,16 @@ def toggle_system(self, context):
         layer.use_pass_ambient_occlusion = True
         bpy.ops.wm.create_npr_compositor_nodes()
 
+        # Assign a (non-zero) object id to each geometry object in the scene.
+        # TODO: Silhouette drawing needs knowledge of the corresponding grey level in the indexOB map, which is
+        # based on this index. It would be better to allow the User to select the Subject of the render, then assign
+        # it pass index 1, but this will do for now.
+        for n, object in enumerate(context.scene.objects):
+            if object.type == 'MESH':
+                index = n + 1
+                logger.debug("Assigning pass index %d to object: %s", index, object.name)
+                object.pass_index = n + 1
+
         bpy.app.handlers.render_post.append(process_illustration)
     else:
         logger.debug("Disabling system...")
