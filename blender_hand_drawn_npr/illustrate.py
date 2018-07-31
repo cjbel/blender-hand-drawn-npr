@@ -7,6 +7,10 @@ import numpy as np
 import tempfile
 import logging
 
+# TODO: Temp imports
+import matplotlib.pyplot as plt
+from skimage import io
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,8 +20,6 @@ class Illustrator:
     depth_image = None
     diffdir_image = None
     uv_image = None
-    u_image = None
-    v_image = None
     normal_image = None
     illustration = None
 
@@ -38,11 +40,6 @@ class Illustrator:
                                                                      "Normal0001.tif"))
         self.uv_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
                                                                  "UV0001.tif"))
-        # Tiff/png file formats are mapped to a non-linear colourspace, which skew the uv coords. Transform to linear
-        # colorspace.
-        uv_image = raster_utils.linearise_colourspace(self.uv_image)
-        self.u_image = uv_image[:, :, 0]
-        self.v_image = uv_image[:, :, 1]
 
         # Prepare the vector canvas.
         out_file = os.path.join(self.img_dir,
@@ -63,14 +60,10 @@ class Illustrator:
             logger.warning("No silhouette could be found.")
             return
 
-        # Convert approximations to pixel values (nearest integer).
-        coords = np.round(coords).astype(np.int)
-
         points = point_utils.coords_to_points(coords=coords,
                                               depth_image=self.depth_image,
                                               diffdir_image=self.diffdir_image,
-                                              u_image=self.u_image,
-                                              v_image=self.v_image)
+                                              uv_image=self.uv_image)
         points = point_utils.remove_duplicate_coords(points)
         points = point_utils.linear_optimise(points)
 
@@ -96,38 +89,79 @@ class Illustrator:
 
         logger.info("Illustrating relief grid...")
 
-        # It is not guaranteed that uv coords will be mapped across the full available colorspace (this depends on how
-        # the User has uv unwrapped their model). The actual min max uv values will define the range over which
-        # we will divide the image into slices, so compute that here.
-        min_rgb, max_rgb = raster_utils.min_max_rgb(self.uv_image)
+
         num_slices = 10  # TODO: Make User configurable.
 
-        u_slicemask = raster_utils.uv_slicemask(self.u_image, min_rgb[0], max_rgb[0], num_slices)
-        v_slicemask = raster_utils.uv_slicemask(self.v_image, min_rgb[1], max_rgb[1], num_slices)
+        u_streamlines, v_streamlines = raster_utils.uv_streamlines(num_slices,
+                                                                   self.depth_image,
+                                                                   self.diffdir_image,
+                                                                   self.uv_image)
 
-        # Compute streamlines in both UV directions. Each coord_set will be a closed loop around each slicemask
-        # segment. As such each coord_set will consist of two streamlines and two edges (which must later be discarded).
-        rejection_threshold = 100  # TODO: Consider making User configurable.
-        u_streamline_coord_sets = raster_utils.path_trace(u_slicemask, rejection_threshold)
-        v_streamline_coord_sets = raster_utils.path_trace(v_slicemask, rejection_threshold)
-        streamline_coord_lists = u_streamline_coord_sets + v_streamline_coord_sets
+        # Define the thickness factor.
+        f = 3  # TODO: Make user-configurable.
 
-        # Build a list of Point lists representing each streamline loop.
-        streamlines = []
-        for streamline_coord_list in streamline_coord_lists:
-            coords = np.round(streamline_coord_list).astype(np.int)
-            points = point_utils.coords_to_points(coords=coords,
-                                                  depth_image=self.depth_image,
-                                                  diffdir_image=self.diffdir_image,
-                                                  u_image=self.u_image,
-                                                  v_image=self.v_image)
-            points = point_utils.remove_duplicate_coords(points)
-            streamlines.append(points)
+        for points in u_streamlines:
+            # Draw vector strokes.
+            for i in range(0, len(points)):
+                if i != len(points) - 1:
+                    # Draw a Stroke between adjacent Points.
+                    vector_utils.draw_straight_stroke(points[i], points[i + 1], f, self.illustration)
 
-        # Eliminate streamline loop segments at the edges.
-        for point in streamlines[0]:
-            print(point)
+        for points in v_streamlines:
+            # Draw vector strokes.
+            for i in range(0, len(points)):
+                if i != len(points) - 1:
+                    # Draw a Stroke between adjacent Points.
+                    vector_utils.draw_straight_stroke(points[i], points[i + 1], f, self.illustration)
 
+        # # TODO: Remove "boundaries" return value from uv_slicemask function?
+        # u_slicemask, boundaries = raster_utils.uv_slicemask(self.u_image, min_rgb[0], max_rgb[0], num_slices)
+        # # v_slicemask = raster_utils.uv_slicemask(self.v_image, min_rgb[1], max_rgb[1], num_slices)
+        #
+        # # Compute streamlines in both UV directions. Each coord_set will be a closed loop around each slicemask
+        # # segment. As such each coord_set will consist of two streamlines and two edges (which must later be discarded).
+        # rejection_threshold = 100  # TODO: Consider making User configurable.
+        # u_streamloops_coords = raster_utils.path_trace(u_slicemask, rejection_threshold)
+        # # v_streamline_coord_sets = raster_utils.path_trace(v_slicemask, rejection_threshold)
+        # # streamloop_coord_lists = u_streamloop_coord_sets #+ v_streamline_coord_sets
+        #
+        # # Build a list of Point lists representing each streamline loop.
+        # u_streamlines = []
+        # for u_streamloop_coords in u_streamloops_coords:
+        #     points = point_utils.coords_to_points(coords=u_streamloop_coords,
+        #                                           depth_image=self.depth_image,
+        #                                           diffdir_image=self.diffdir_image,
+        #                                           u_image=self.u_image,
+        #                                           v_image=self.v_image)
+        #     points = point_utils.remove_duplicate_coords(points)
+        #
+        #     # Break streamloop into two distinct streamlines.
+        #     u_threshold = 100  #
+        #
+        #     u_streamlines.append(points)
+
+        # print(boundaries)
+        # raster_image = np.zeros_like(self.object_image)
+        # v_buffer = 100
+        # u_buffer = 1000
+        #
+        # accepted_streamlines = []
+        # for streamline in u_streamloops_points:
+        #     print("hi")
+        #     # accepted_streamline = []
+        #     # for point in streamline:
+        #     #     if point.u > ()
+
+        # for streamline in streamlines:
+        #     u_terminators = (min([i.v for i in streamline]), max([i.v for i in streamline]))
+        #     print(u_terminators)
+        #     for point in streamline:
+        #         if point.v > (u_terminators[0] + v_buffer) and point.v < (u_terminators[1] - v_buffer):
+        #             if point.u > (boundaries[1] - u_buffer) and point.u < (boundaries[1] + u_buffer):
+        #                 print(point)
+        #                 raster_image[point.y, point.x] = 1
+
+        # io.imsave("/tmp/test.png", raster_image)
 
         # TODO: Render Strokes and tings.
 
@@ -136,7 +170,9 @@ class Illustrator:
 
 
 if __name__ == "__main__":
-    illustrator = Illustrator("/tmp/flat_plane_ortho_uv")
-    # illustrator.illustrate_silhouette()
+    # illustrator = Illustrator("/tmp/flat_plane_ortho_uv")
+    # illustrator = Illustrator("/tmp/bump_plane_ortho_uv")
+    illustrator = Illustrator("/tmp/undulating_plane")
+    illustrator.illustrate_silhouette()
     illustrator.illustrate_relief_grid()
-    # illustrator.save()
+    illustrator.save()

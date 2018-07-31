@@ -1,20 +1,79 @@
 import math
 from collections import namedtuple
 import rdp
+import numpy as np
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def create_point(x, y, depth_intensity, diffdir_intensity, ux, uy):
+def create_point(x, y, depth_image, diffdir_image, uv_image):
     """
     Create a new Point data-object (as a named tuple).
 
-    :return: Point.
+    Notes:
+        - Floating point inputs for x, y will be changed to ints, to match pixel-space.
+        - Only valid points will be returned, i.e. points which exist within the Subject boundary.
+
+    :return: A valid Point, or None if a valid Point cannot be found.
     """
-    Point = namedtuple("Point", "x y depth_intensity diffdir_intensity ux uy")
-    return Point(x, y, depth_intensity, diffdir_intensity, ux, uy)
+    # Convert approximate pixel location (float) into concrete pixel location (int).
+    x, y = np.round(x).astype(np.int), np.round(y).astype(np.int)
+
+    Point = namedtuple("Point", "x y depth_intensity diffdir_intensity u v")
+
+    point = Point(x=x,
+                  y=y,
+                  depth_intensity=depth_image[y, x],
+                  diffdir_intensity=diffdir_image[y, x],
+                  u=uv_image[:, :, 0][y, x],
+                  v=uv_image[:, :, 1][y, x])
+
+    # Rounding as above may shift the pixel position beyond the Subject boundary. This will cause incorrect attributes
+    # to be read from the images (depth, diffdir etc). If the function below evaluates to False, this is a strong
+    # indicator of this mismatch.
+    # TODO: This may cause false positives, since 0, 0 uv will be valid at one Point. Consider using object map instead?
+    def is_valid(query_point):
+        return any([query_point.diffdir_intensity != 0,
+                    query_point.u != 0,
+                    query_point.v != 0])
+
+    if is_valid(point):
+        logger.debug("Valid: %s ", point)
+        return point
+
+    else:
+        # Need to find another pixel nearby which passes the test. Due to the nature of rounding, a pixel with valid
+        # attributes will be found within 1 pixel of the original. So first, identify translations required to shift
+        # pixel position by 1 pixel in each direction.
+        pixel_translations = [[1, 0],  # x+
+                              [0, 1],  # y+
+                              [-1, 0],  # x-
+                              [0, -1]]  # y-
+
+        # Now evaluate the attributes of each neighbour.
+        for pixel_translation in pixel_translations:
+            candidate_x = x + pixel_translation[0]
+            candidate_y = y + pixel_translation[1]
+
+            try:
+                candidate_point = Point(x=candidate_x,
+                                        y=candidate_y,
+                                        depth_intensity=depth_image[candidate_y, candidate_x],
+                                        diffdir_intensity=diffdir_image[candidate_y, candidate_x],
+                                        u=uv_image[:, :, 0][candidate_y, candidate_x],
+                                        v=uv_image[:, :, 1][candidate_y, candidate_x])
+            except IndexError:
+                logger.debug("Candidate Point index out of bounds: %s, %s", candidate_x, candidate_y)
+                break
+
+            if is_valid(candidate_point):
+                logger.debug("Invalid: %s replaced with: %s", point, candidate_point)
+                return candidate_point
+
+        logger.warning("A valid Point could not be found.")
+        return None
 
 
 def horizontal_delta(p0, p1):
@@ -90,7 +149,7 @@ def thickness_diffdir(p, factor):
     return thickness
 
 
-def coords_to_points(coords, depth_image, diffdir_image, u_image, v_image):
+def coords_to_points(coords, depth_image, diffdir_image, uv_image):
     """
     Convenience function to convert a list of coordinate values into a list of Points.
 
@@ -103,19 +162,13 @@ def coords_to_points(coords, depth_image, diffdir_image, u_image, v_image):
     """
     points = []
     for coord in coords:
-        r, c = coord[0], coord[1]
-        depth_intensity = depth_image[r, c]
-        diffdir_intensity = diffdir_image[r, c]
-        ux = u_image[r, c]
-        uy = v_image[r, c]
-
-        point = create_point(x=c,
-                             y=r,
-                             depth_intensity=depth_intensity,
-                             diffdir_intensity=diffdir_intensity,
-                             ux=ux,
-                             uy=uy)
-        points.append(point)
+        point = create_point(x=coord[1],
+                             y=coord[0],
+                             depth_image=depth_image,
+                             diffdir_image=diffdir_image,
+                             uv_image=uv_image)
+        if point is not None:
+            points.append(point)
 
     return points
 
