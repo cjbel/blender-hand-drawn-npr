@@ -38,6 +38,7 @@ def uv_slice(channel_img, num_segments):
     return composite_img
 
 
+
 # image = imageio.imread("/tmp/uv_plane/UV0001.tif")
 image = imageio.imread("/tmp/undulating_plane/UV0001.tif")
 

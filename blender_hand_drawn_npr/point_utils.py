@@ -1,19 +1,20 @@
 import math
 from collections import namedtuple
+import rdp
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def create_point(x, y, depth_intensity, diffdir_intensity):
+def create_point(x, y, depth_intensity, diffdir_intensity, ux, uy):
     """
     Create a new Point data-object (as a named tuple).
 
     :return: Point.
     """
-    Point = namedtuple("Point", "x y depth_intensity diffdir_intensity")
-    return Point(x, y, depth_intensity, diffdir_intensity)
+    Point = namedtuple("Point", "x y depth_intensity diffdir_intensity ux uy")
+    return Point(x, y, depth_intensity, diffdir_intensity, ux, uy)
 
 
 def horizontal_delta(p0, p1):
@@ -87,3 +88,77 @@ def thickness_diffdir(p, factor):
     logger.debug("Thickness at %s, with factor %f: %f", p, factor, thickness)
 
     return thickness
+
+
+def coords_to_points(coords, depth_image, diffdir_image, u_image, v_image):
+    """
+    Convenience function to convert a list of coordinate values into a list of Points.
+
+    :param coords:
+    :param depth_image:
+    :param diffdir_image:
+    :param u_image:
+    :param v_image:
+    :return:
+    """
+    points = []
+    for coord in coords:
+        r, c = coord[0], coord[1]
+        depth_intensity = depth_image[r, c]
+        diffdir_intensity = diffdir_image[r, c]
+        ux = u_image[r, c]
+        uy = v_image[r, c]
+
+        point = create_point(x=c,
+                             y=r,
+                             depth_intensity=depth_intensity,
+                             diffdir_intensity=diffdir_intensity,
+                             ux=ux,
+                             uy=uy)
+        points.append(point)
+
+    return points
+
+
+def remove_duplicate_coords(points):
+    """
+    Remove Points with duplicate coordinates in a list of Points, preserving the original order.
+
+    :param points:
+    :return:
+    """
+    unique_points = []
+    seen = set()
+    for point in points:
+        if (point.x, point.y) not in seen:
+            seen.add((point.x, point.y))
+            unique_points.append(point)
+
+    return unique_points
+
+
+def linear_optimise(points):
+    """
+    Simplify a list of coordinates whilst maintaining the overall shape of the path they represent.
+
+    :param points: list of Points.
+    :return: Optimised list of Points.
+    """
+    logger.debug("Unoptimised vertex count: %d", len(points))
+
+    # Extract all coords from Points.
+    coords = [[point.x, point.y] for point in points]
+
+    # Optimise.
+    optimised_coords = rdp.rdp(coords, epsilon=1)
+
+    # Relate coords back to Points.
+    optimised_points = []
+    for optimised_coord in optimised_coords:
+        for point in points:
+            if optimised_coord == [point.x, point.y]:
+                optimised_points.append(point)
+
+    logger.debug("Optimised vertex count: %d", len(optimised_points))
+
+    return optimised_points

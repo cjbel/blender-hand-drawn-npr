@@ -130,8 +130,8 @@ def draw_straight_stroke(p0, p1, thk_factor, drawing):
     length = point_utils.euclidean_dist(p0, p1)
 
     # Define stroke thickness for each point. TODO: May be better to take a linear transform approach (see snippet).
-    t0 = point_utils.thickness_diffdir(p0, thk_factor)
-    t1 = point_utils.thickness_diffdir(p1, thk_factor)
+    t0 = point_utils.thickness_depth(p0, thk_factor)  # TODO: Make expression method (depth/diffdir) User configurable.
+    t1 = point_utils.thickness_depth(p1, thk_factor)  # TODO: Make expression method (depth/diffdir) User configurable.
 
     # Define the parameterised stroke outline.
     # With the center of the leftmost end-cap taken as (0, 0), a 2D straight stroke with rounded ends can be modelled
