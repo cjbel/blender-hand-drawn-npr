@@ -7,7 +7,6 @@ import numpy as np
 from collections import namedtuple
 import matplotlib.pyplot as plt
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -97,115 +96,86 @@ def read_rgb_image(image_file):
     return imageio.imread(image_file)
 
 
-def uv_slicemask(image, min_intensity, max_intensity, num_slices):
-    logger.debug("UV slices: %d", num_slices)
-
-    interval = max_intensity - min_intensity
-    logger.debug("UV slice interval: %f", interval)
-
-    slice_size = interval / num_slices
-    logger.debug("UV slice size: %f", slice_size)
-
-    slicemask = np.zeros_like(image)
-
-    boundaries = []
-
-    for stepwise_slice in range(0, num_slices, 2):
-        logger.debug("Computing slice %d...", stepwise_slice)
-
-        start_boundary = stepwise_slice * slice_size
-        boundaries.append(start_boundary)
-        logger.debug("Start boundary: %f", start_boundary)
-
-        end_boundary = start_boundary + slice_size
-        boundaries.append(end_boundary)
-        logger.debug("End boundary: %f", end_boundary)
-
-        start_boundary_mask = image < start_boundary
-        end_boundary_mask = image >= start_boundary + slice_size
-
-        stepwise_slicemask = np.zeros_like(start_boundary_mask)
-        stepwise_slicemask[start_boundary_mask] = True
-        stepwise_slicemask[end_boundary_mask] = True
-
-        slicemask[np.invert(stepwise_slicemask)] = True
-
-    return slicemask, boundaries
+def uv_image_to_components(uv_image):
+    return uv_image[:, :, 0], uv_image[:, :, 1]
 
 
-def uv_streamlines(num_slices, depth_image, diffdir_image, uv_image):
+def trim_streamline(streamline, intensity, u_threshold, v_threshold, uv_image, direction):
+
+    u_image, v_image = uv_image_to_components(uv_image)
+
+    trimmed_streamline = []
+    if direction == 'u':
+        for point in streamline:
+            if (intensity - u_threshold) <= point.u <= (intensity + u_threshold) and \
+                    (v_image.min() + v_threshold) <= point.v <= (v_image.max() - v_threshold):
+                trimmed_streamline.append(point)
+
+    elif direction == 'v':
+        for point in streamline:
+            if (intensity - v_threshold) <= point.v <= (intensity + v_threshold) and \
+                    (u_image.min() + u_threshold) <= point.u <= (u_image.max() - u_threshold):
+                trimmed_streamline.append(point)
+
+    else:
+        raise ValueError("direction argument must be equal to 'u' or 'v'")
+
+    return trimmed_streamline
+
+
+def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, uv_image, depth_image, diffdir_image):
     # Tiff/png file formats are mapped to a non-linear colourspace, which skew the uv coords. Transform to linear
     # colorspace.
-    corrected_uv_image = linearise_colourspace(uv_image)
+    uv_image = linearise_colourspace(uv_image)
 
-    UVImage = namedtuple("UVImage", "u v")
-    # Split the composite uv image into their u (red) and v (green) component images.
-    uv_image = UVImage(corrected_uv_image[:, :, 0], corrected_uv_image[:, :, 1])
+    u_image, v_image = uv_image_to_components(uv_image)
+    u_grid_width, v_grid_width = (u_image.max() - u_image.min()) / u_slices, \
+                                (v_image.max() - v_image.min()) / v_slices
 
-    GridWidth = namedtuple("GridWidth", "u v")
-    grid_width = GridWidth((uv_image.u.max() - uv_image.u.min()) / num_slices,
-                           (uv_image.v.max() - uv_image.v.min()) / num_slices)
-
+    # Identify u and v intensity values representing each slice boundary.
     u_intensities = []
+    for streamline_pos in range(1, u_slices):
+        u_intensities.append(streamline_pos * u_grid_width)
+
     v_intensities = []
-    for line_num in range(1, num_slices):
-        u_intensities.append(line_num * grid_width.u)
-        v_intensities.append(line_num * grid_width.v)
+    for streamline_pos in range(1, v_slices):
+        v_intensities.append(streamline_pos * v_grid_width)
 
-    raster_image = np.zeros_like(depth_image)
-
+    # Compute u and v streamlines.
     u_streamlines = []
-    v_streamlines = []
     for intensity in u_intensities:
-
-        streamline = []
-
-        contour = path_trace(image=uv_image.u,
-                             intensity=intensity)[0]
-
-        contour_points = point_utils.coords_to_points(contour,
-                                                      diffdir_image=diffdir_image,
-                                                      depth_image=depth_image,
-                                                      uv_image=corrected_uv_image)
-        contour_points = point_utils.remove_duplicate_coords(contour_points)
-
-        u_threshold = 100  # TODO: Make User configurable.
-        v_threshold = 100  # TODO: Make User configurable.
-        for contour_point in contour_points:
-            if (intensity - u_threshold) <= contour_point.u <= (intensity + u_threshold):
-                if (uv_image.v.min() + v_threshold) <= contour_point.v <= (uv_image.v.max() - v_threshold):
-                    streamline.append(contour_point)
-                    raster_image[contour_point.y, contour_point.x] = 1
-
+        streamline_coords = path_trace(image=u_image,
+                                       intensity=intensity)[0]
+        streamline = point_utils.coords_to_points(streamline_coords,
+                                                  diffdir_image=diffdir_image,
+                                                  depth_image=depth_image,
+                                                  uv_image=uv_image)
+        streamline = point_utils.remove_duplicate_coords(streamline)
+        streamline = trim_streamline(streamline=streamline,
+                                     intensity=intensity,
+                                     u_threshold=u_threshold,
+                                     v_threshold=v_threshold,
+                                     uv_image=uv_image,
+                                     direction="u")
         streamline = point_utils.linear_optimise(streamline)
-
         u_streamlines.append(streamline)
 
+    v_streamlines = []
     for intensity in v_intensities:
-
-        streamline = []
-
-        contour = path_trace(image=uv_image.v,
-                             intensity=intensity)[0]
-
-        contour_points = point_utils.coords_to_points(contour,
-                                                      diffdir_image=diffdir_image,
-                                                      depth_image=depth_image,
-                                                      uv_image=corrected_uv_image)
-        contour_points = point_utils.remove_duplicate_coords(contour_points)
-
-        u_threshold = 100  # TODO: Make User configurable.
-        v_threshold = 100  # TODO: Make User configurable.
-        for contour_point in contour_points:
-            if (intensity - v_threshold) <= contour_point.v <= (intensity + v_threshold):
-                if (uv_image.u.min() + u_threshold) <= contour_point.u <= (uv_image.u.max() - u_threshold):
-                    streamline.append(contour_point)
-                    raster_image[contour_point.y, contour_point.x] = 1
-
+        streamline_coords = path_trace(image=v_image,
+                                       intensity=intensity)[0]
+        streamline = point_utils.coords_to_points(streamline_coords,
+                                                  diffdir_image=diffdir_image,
+                                                  depth_image=depth_image,
+                                                  uv_image=uv_image)
+        streamline = point_utils.remove_duplicate_coords(streamline)
+        streamline = trim_streamline(streamline=streamline,
+                                     intensity=intensity,
+                                     u_threshold=u_threshold,
+                                     v_threshold=v_threshold,
+                                     uv_image=uv_image,
+                                     direction="v")
         streamline = point_utils.linear_optimise(streamline)
-
         v_streamlines.append(streamline)
-
-    io.imsave("/tmp/test.png", raster_image)
 
     return u_streamlines, v_streamlines
