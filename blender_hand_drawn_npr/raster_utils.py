@@ -96,13 +96,13 @@ def read_rgb_image(image_file):
     return imageio.imread(image_file)
 
 
-def uv_image_to_components(uv_image):
-    return uv_image[:, :, 0], uv_image[:, :, 1]
+def image_to_components(image):
+    return image[:, :, 0], image[:, :, 1]
 
 
 def trim_streamline(streamline, intensity, u_threshold, v_threshold, uv_image, direction):
 
-    u_image, v_image = uv_image_to_components(uv_image)
+    u_image, v_image = image_to_components(uv_image)
 
     trimmed_streamline = []
     if direction == 'u':
@@ -123,12 +123,10 @@ def trim_streamline(streamline, intensity, u_threshold, v_threshold, uv_image, d
     return trimmed_streamline
 
 
-def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, uv_image, depth_image, diffdir_image):
+def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, render_pass):
     # Tiff/png file formats are mapped to a non-linear colourspace, which skew the uv coords. Transform to linear
     # colorspace.
-    uv_image = linearise_colourspace(uv_image)
-
-    u_image, v_image = uv_image_to_components(uv_image)
+    u_image, v_image = image_to_components(render_pass.uv)
     u_grid_width, v_grid_width = (u_image.max() - u_image.min()) / u_slices, \
                                 (v_image.max() - v_image.min()) / v_slices
 
@@ -147,15 +145,13 @@ def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, uv_image, depth
         streamline_coords = path_trace(image=u_image,
                                        intensity=intensity)[0]
         streamline = point_utils.coords_to_points(streamline_coords,
-                                                  diffdir_image=diffdir_image,
-                                                  depth_image=depth_image,
-                                                  uv_image=uv_image)
+                                                  render_pass=render_pass)
         streamline = point_utils.remove_duplicate_coords(streamline)
         streamline = trim_streamline(streamline=streamline,
                                      intensity=intensity,
                                      u_threshold=u_threshold,
                                      v_threshold=v_threshold,
-                                     uv_image=uv_image,
+                                     uv_image=render_pass.uv,
                                      direction="u")
         streamline = point_utils.linear_optimise(streamline)
         u_streamlines.append(streamline)
@@ -165,15 +161,13 @@ def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, uv_image, depth
         streamline_coords = path_trace(image=v_image,
                                        intensity=intensity)[0]
         streamline = point_utils.coords_to_points(streamline_coords,
-                                                  diffdir_image=diffdir_image,
-                                                  depth_image=depth_image,
-                                                  uv_image=uv_image)
+                                                  render_pass=render_pass)
         streamline = point_utils.remove_duplicate_coords(streamline)
         streamline = trim_streamline(streamline=streamline,
                                      intensity=intensity,
                                      u_threshold=u_threshold,
                                      v_threshold=v_threshold,
-                                     uv_image=uv_image,
+                                     uv_image=render_pass.uv,
                                      direction="v")
         streamline = point_utils.linear_optimise(streamline)
         v_streamlines.append(streamline)

@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_point(x, y, depth_image, diffdir_image, uv_image):
+def create_point(x, y, render_pass):
     """
     Create a new Point data-object (as a named tuple).
 
@@ -25,10 +25,10 @@ def create_point(x, y, depth_image, diffdir_image, uv_image):
 
     point = Point(x=x,
                   y=y,
-                  depth_intensity=depth_image[y, x],
-                  diffdir_intensity=diffdir_image[y, x],
-                  u=uv_image[:, :, 0][y, x],
-                  v=uv_image[:, :, 1][y, x])
+                  depth_intensity=render_pass.depth[y, x],
+                  diffdir_intensity=render_pass.diffdir[y, x],
+                  u=render_pass.uv[:, :, 0][y, x],
+                  v=render_pass.uv[:, :, 1][y, x])
 
     # Rounding as above may shift the pixel position beyond the Subject boundary. This will cause incorrect attributes
     # to be read from the images (depth, diffdir etc). If the function below evaluates to False, this is a strong
@@ -60,10 +60,10 @@ def create_point(x, y, depth_image, diffdir_image, uv_image):
             try:
                 candidate_point = Point(x=candidate_x,
                                         y=candidate_y,
-                                        depth_intensity=depth_image[candidate_y, candidate_x],
-                                        diffdir_intensity=diffdir_image[candidate_y, candidate_x],
-                                        u=uv_image[:, :, 0][candidate_y, candidate_x],
-                                        v=uv_image[:, :, 1][candidate_y, candidate_x])
+                                        depth_intensity=render_pass.depth[candidate_y, candidate_x],
+                                        diffdir_intensity=render_pass.diffdir[candidate_y, candidate_x],
+                                        u=render_pass.uv[:, :, 0][candidate_y, candidate_x],
+                                        v=render_pass.uv[:, :, 1][candidate_y, candidate_x])
             except IndexError:
                 logger.debug("Candidate Point index out of bounds: %s, %s", candidate_x, candidate_y)
                 break
@@ -149,24 +149,19 @@ def thickness_diffdir(p, factor):
     return thickness
 
 
-def coords_to_points(coords, depth_image, diffdir_image, uv_image):
+def coords_to_points(coords, render_pass):
     """
     Convenience function to convert a list of coordinate values into a list of Points.
 
     :param coords:
-    :param depth_image:
-    :param diffdir_image:
-    :param u_image:
-    :param v_image:
+    :param render_pass:
     :return:
     """
     points = []
     for coord in coords:
         point = create_point(x=coord[1],
                              y=coord[0],
-                             depth_image=depth_image,
-                             diffdir_image=diffdir_image,
-                             uv_image=uv_image)
+                             render_pass=render_pass)
         if point is not None:
             points.append(point)
 

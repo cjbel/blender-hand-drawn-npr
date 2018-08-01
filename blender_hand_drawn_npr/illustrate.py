@@ -3,9 +3,9 @@ import blender_hand_drawn_npr.raster_utils as raster_utils
 import blender_hand_drawn_npr.vector_utils as vector_utils
 
 import os
-import numpy as np
 import tempfile
 import logging
+from collections import namedtuple
 
 # TODO: Temp imports
 import matplotlib.pyplot as plt
@@ -16,11 +16,7 @@ logger = logging.getLogger(__name__)
 
 class Illustrator:
     img_dir = None
-    object_image = None
-    depth_image = None
-    diffdir_image = None
-    uv_image = None
-    normal_image = None
+    render_pass = None
     illustration = None
 
     def __init__(self, img_dir):
@@ -30,23 +26,31 @@ class Illustrator:
         self.img_dir = img_dir
 
         # Read render passes.
-        self.object_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
-                                                                      "IndexOB0001.png"))
-        self.depth_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
-                                                                     "Depth0001.png"))
-        self.diffdir_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
-                                                                       "DiffDir0001.png"))
-        self.normal_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
-                                                                     "Normal0001.tif"))
-        self.uv_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
-                                                                 "UV0001.tif"))
+        object_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
+                                                                 "IndexOB0001.png"))
+        depth_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
+                                                                "Depth0001.png"))
+        diffdir_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
+                                                                  "DiffDir0001.png"))
+        normal_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
+                                                                "Normal0001.tif"))
+        uv_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
+                                                            "UV0001.tif"))
+        uv_image = raster_utils.linearise_colourspace(uv_image)
+
+        RenderPass = namedtuple("RenderPass", "object depth diffdir normal uv")
+        self.render_pass = RenderPass(object=object_image,
+                                      depth=depth_image,
+                                      diffdir=diffdir_image,
+                                      normal=normal_image,
+                                      uv=uv_image)
 
         # Prepare the vector canvas.
         out_file = os.path.join(self.img_dir,
                                 "vector_rendering.svg")  # TODO: Make user-configurable.
         self.illustration = vector_utils.create_canvas(out_file,
-                                                       self.object_image.shape[1],
-                                                       self.object_image.shape[0])
+                                                       self.render_pass.object.shape[1],
+                                                       self.render_pass.object.shape[0])
 
     def illustrate_silhouette(self):
 
@@ -54,16 +58,14 @@ class Illustrator:
 
         try:
             # Assume the first contour group captures the needed edges.
-            coords = raster_utils.path_trace(self.object_image)[0]
+            coords = raster_utils.path_trace(self.render_pass.object)[0]
         except IndexError:
             # No silhouette can be drawn if no paths are found...
             logger.warning("No silhouette could be found.")
             return
 
         points = point_utils.coords_to_points(coords=coords,
-                                              depth_image=self.depth_image,
-                                              diffdir_image=self.diffdir_image,
-                                              uv_image=self.uv_image)
+                                              render_pass=self.render_pass)
         points = point_utils.remove_duplicate_coords(points)
         points = point_utils.linear_optimise(points)
 
@@ -98,9 +100,7 @@ class Illustrator:
                                                                    u_threshold=u_threshold,
                                                                    v_slices=v_slices,
                                                                    v_threshold=v_threshold,
-                                                                   uv_image=self.uv_image,
-                                                                   depth_image=self.depth_image,
-                                                                   diffdir_image=self.diffdir_image)
+                                                                   render_pass=self.render_pass)
         streamlines = u_streamlines + v_streamlines
 
         # Define the thickness factor.
