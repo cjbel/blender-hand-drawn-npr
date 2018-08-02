@@ -153,7 +153,7 @@ def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, render_pass):
                                      v_threshold=v_threshold,
                                      uv_image=render_pass.uv,
                                      direction="u")
-        streamline = point_utils.linear_optimise(streamline)
+        streamline = point_utils.optimise_path(streamline, 10)  # TODO: Make factor user configurable
         u_streamlines.append(streamline)
 
     v_streamlines = []
@@ -169,7 +169,7 @@ def uv_streamlines(u_slices, u_threshold, v_slices, v_threshold, render_pass):
                                      v_threshold=v_threshold,
                                      uv_image=render_pass.uv,
                                      direction="v")
-        streamline = point_utils.linear_optimise(streamline)
+        streamline = point_utils.optimise_path(streamline, 10)  # TODO: Make factor user configurable
         v_streamlines.append(streamline)
 
     return u_streamlines, v_streamlines

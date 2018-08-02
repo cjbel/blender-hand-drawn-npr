@@ -5,7 +5,8 @@ import svgwrite
 
 drawing = svgwrite.Drawing("/tmp/bezier.svg", (200, 200))
 
-points = ((10, 10), (22, 20), (30, 30), (40, 40), (70, 60), (100, 40))
+points = ((10, 10), (10, 20), (20, 20), (20, 10), (10, 10))
+# points = ((10, 10), (22, 20), (30, 30), (40, 40), (70, 60), (100, 40))
 # points = ((10, 10), (25, 20), (30, 30), (40, 40), (50, 80))
 for point in points:
     circle = drawing.circle(center=(point[0], point[1]), r=2, stroke='red', stroke_width=1)

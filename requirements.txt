@@ -3,3 +3,4 @@ imageio
 tifffile
 svgwrite
 rdp
+simplification

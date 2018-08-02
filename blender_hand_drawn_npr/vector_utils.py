@@ -1,4 +1,5 @@
 import blender_hand_drawn_npr.point_utils as point_utils
+import blender_hand_drawn_npr.PathFitter as path_fitter
 
 import numpy as np
 import logging
@@ -165,3 +166,20 @@ def draw_straight_stroke(p0, p1, thk_factor, drawing):
 
     logger.debug("Adding stroke to canvas...")
     drawing.add(stroke_outline)
+
+
+def draw_curved_stroke(points, thk_factor, drawing):
+
+    for point in points:
+        circle = drawing.circle(center=(int(point.x), int(point.y)), r=1, fill='red', stroke_width=0)
+        drawing.add(circle)
+
+    fit_error = 10  # TODO: Make User configurable.
+    fitted_curves = path_fitter.fitpath(points, fit_error)
+    svg_commands = path_fitter.pathtosvg(fitted_curves)
+
+    curve_path = drawing.path(stroke='black', stroke_width='1', fill='none')
+    curve_path.push(svg_commands)
+
+    # Add the path to the canvas.
+    drawing.add(curve_path)

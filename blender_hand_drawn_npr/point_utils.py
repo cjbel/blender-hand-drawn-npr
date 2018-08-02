@@ -2,11 +2,11 @@ import math
 from collections import namedtuple
 import rdp
 import numpy as np
+from simplification import cutil
 
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 def create_point(x, y, render_pass):
     """
@@ -185,7 +185,7 @@ def remove_duplicate_coords(points):
     return unique_points
 
 
-def linear_optimise(points):
+def optimise_path(points, factor=1):
     """
     Simplify a list of coordinates whilst maintaining the overall shape of the path they represent.
 
@@ -198,7 +198,8 @@ def linear_optimise(points):
     coords = [[point.x, point.y] for point in points]
 
     # Optimise.
-    optimised_coords = rdp.rdp(coords, epsilon=1)
+    # optimised_coords = rdp.rdp(coords, epsilon=factor)
+    optimised_coords = cutil.simplify_coords_vw(coords, factor)
 
     # Relate coords back to Points.
     optimised_points = []

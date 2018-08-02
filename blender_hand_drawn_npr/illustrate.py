@@ -67,7 +67,7 @@ class Illustrator:
         points = point_utils.coords_to_points(coords=coords,
                                               render_pass=self.render_pass)
         points = point_utils.remove_duplicate_coords(points)
-        points = point_utils.linear_optimise(points)
+        points = point_utils.optimise_path(points)
 
         # Define the thickness factor.
         f = 10  # TODO: Make user-configurable.
@@ -108,10 +108,12 @@ class Illustrator:
 
         for points in streamlines:
             # Draw vector strokes.
-            for i in range(0, len(points)):
-                if i != len(points) - 1:
-                    # Draw a Stroke between adjacent Points.
-                    vector_utils.draw_straight_stroke(points[i], points[i + 1], f, self.illustration)
+            vector_utils.draw_curved_stroke(points, 1, self.illustration)
+
+            # for i in range(0, len(points)):
+            #     if i != len(points) - 1:
+            #         # Draw a Stroke between adjacent Points.
+            #         vector_utils.draw_straight_stroke(points[i], points[i + 1], f, self.illustration)
 
     def save(self):
         vector_utils.save(self.illustration)
@@ -121,6 +123,6 @@ if __name__ == "__main__":
     # illustrator = Illustrator("/tmp/flat_plane_ortho_uv")
     # illustrator = Illustrator("/tmp/bump_plane_ortho_uv")
     illustrator = Illustrator("/tmp/undulating_plane")
-    illustrator.illustrate_silhouette()
+    # illustrator.illustrate_silhouette()
     illustrator.illustrate_relief_grid()
     illustrator.save()
