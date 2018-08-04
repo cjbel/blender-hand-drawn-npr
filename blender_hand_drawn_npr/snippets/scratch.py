@@ -1,25 +1,33 @@
-from blender_hand_drawn_npr import PathFitter
-from skimage import io, draw
-import numpy as np
-import svgwrite
+from collections import deque
+from blender_hand_drawn_npr.point import Point
 
-drawing = svgwrite.Drawing("/tmp/bezier.svg", (200, 200))
+# C, D, E, F, G, H
+# H, I, J, K
+# K, L, A, B
 
-points = ((10, 10), (10, 20), (20, 20), (20, 10), (10, 10))
-# points = ((10, 10), (22, 20), (30, 30), (40, 40), (70, 60), (100, 40))
-# points = ((10, 10), (25, 20), (30, 30), (40, 40), (50, 80))
-for point in points:
-    circle = drawing.circle(center=(point[0], point[1]), r=2, stroke='red', stroke_width=1)
-    drawing.add(circle)
+# points = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
+points = [Point(10, 0), Point(20, 0), Point(30, 0), Point(40, 0), Point(50, 0), Point(60, 0), Point(70, 0), Point(80, 0)]
 
-fitted_curves = PathFitter.fitpath(points, 1)
-svg_commands = PathFitter.pathtosvg(fitted_curves)
+corners = [2, 4, 6]
+print("###", points)
 
-curve_path = drawing.path(stroke='black', stroke_width='2', fill='none')
-curve_path.push(svg_commands)
+# print("##", points.index("H"))
 
-# Add the path to the canvas.
-drawing.add(curve_path)
+offset_correction = corners[0]
+corrected_indexes = [x - offset_correction for x in corners]
 
-drawing.save()
+points = deque(points)
+points.rotate(-offset_correction)
+print("##!", points)
 
+points = list(points)
+print("##*", points)
+
+
+paths = []
+for i in range(0, len(corners)):
+    if i != len(corners) - 1:
+        paths.append(points[corrected_indexes[i]:corrected_indexes[i + 1] + 1])
+    else:
+        paths.append(points[corrected_indexes[i]:])
+print(paths)

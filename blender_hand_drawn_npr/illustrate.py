@@ -1,3 +1,6 @@
+from blender_hand_drawn_npr.surface import Surface
+from blender_hand_drawn_npr.silhouette import Silhouette
+
 import blender_hand_drawn_npr.point_utils as point_utils
 import blender_hand_drawn_npr.raster_utils as raster_utils
 import blender_hand_drawn_npr.vector_utils as vector_utils
@@ -15,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class Illustrator:
-    img_dir = None
-    render_pass = None
-    illustration = None
+    # img_dir = None
+    # render_pass = None
+    # illustration = None
 
     def __init__(self, img_dir):
 
@@ -25,32 +28,44 @@ class Illustrator:
 
         self.img_dir = img_dir
 
+        self.surface = Surface()
+        self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
+        self.surface.init_z_image(os.path.join(self.img_dir, "Depth0001.png"))
+        self.surface.init_diffdir_image(os.path.join(self.img_dir, "DiffDir0001.png"))
+        self.surface.init_norm_image(os.path.join(self.img_dir, "Normal0001.tif"))
+        self.surface.init_uv_image(os.path.join(self.img_dir, "UV0001.tif"))
+
         # Read render passes.
-        object_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
-                                                                 "IndexOB0001.png"))
-        depth_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
-                                                                "Depth0001.png"))
-        diffdir_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
-                                                                  "DiffDir0001.png"))
-        normal_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
-                                                                "Normal0001.tif"))
-        uv_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
-                                                            "UV0001.tif"))
-        uv_image = raster_utils.linearise_colourspace(uv_image)
+        # object_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
+        #                                                          "IndexOB0001.png"))
+        # depth_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
+        #                                                         "Depth0001.png"))
+        # diffdir_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
+        #                                                           "DiffDir0001.png"))
+        # normal_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
+        #                                                         "Normal0001.tif"))
+        # uv_image = raster_utils.read_rgb_image(os.path.join(self.img_dir,
+        #                                                     "UV0001.tif"))
+        # uv_image = raster_utils.linearise_colourspace(uv_image)
+        #
+        # RenderPass = namedtuple("RenderPass", "object depth diffdir normal uv")
+        # self.render_pass = RenderPass(object=object_image,
+        #                               depth=depth_image,
+        #                               diffdir=diffdir_image,
+        #                               normal=normal_image,
+        #                               uv=uv_image)
 
-        RenderPass = namedtuple("RenderPass", "object depth diffdir normal uv")
-        self.render_pass = RenderPass(object=object_image,
-                                      depth=depth_image,
-                                      diffdir=diffdir_image,
-                                      normal=normal_image,
-                                      uv=uv_image)
 
-        # Prepare the vector canvas.
-        out_file = os.path.join(self.img_dir,
-                                "vector_rendering.svg")  # TODO: Make user-configurable.
-        self.illustration = vector_utils.create_canvas(out_file,
-                                                       self.render_pass.object.shape[1],
-                                                       self.render_pass.object.shape[0])
+        # # Prepare the vector canvas.
+        # out_file = os.path.join(self.img_dir,
+        #                         "vector_rendering.svg")  # TODO: Make user-configurable.
+        # self.illustration = vector_utils.create_canvas(out_file,
+        #                                                self.render_pass.object.shape[1],
+        #                                                self.render_pass.object.shape[0])
+
+    def illustrate(self):
+        silhouette = Silhouette(self.surface)
+        silhouette.generate()
 
     def illustrate_silhouette(self):
 
@@ -123,6 +138,7 @@ if __name__ == "__main__":
     # illustrator = Illustrator("/tmp/flat_plane_ortho_uv")
     # illustrator = Illustrator("/tmp/bump_plane_ortho_uv")
     illustrator = Illustrator("/tmp/undulating_plane")
+    illustrator.illustrate()
     # illustrator.illustrate_silhouette()
-    illustrator.illustrate_relief_grid()
-    illustrator.save()
+    # illustrator.illustrate_relief_grid()
+    # illustrator.save()
