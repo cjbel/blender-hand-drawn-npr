@@ -6,6 +6,9 @@ from blender_hand_drawn_npr.point import Point
 from scipy import spatial
 from skimage.feature import corner_peaks, corner_harris, corner_subpix
 from collections import deque
+# from rdp import rdp
+from skimage import measure
+import numpy as np
 
 
 class Path:
@@ -43,6 +46,14 @@ class Path:
                 unique_points.append(point)
 
         self.points = unique_points
+
+    def nearest_neighbour(self, point):
+        distance_map = {}
+
+        for path_point in self.points:
+            distance_map[path_point] = spatial.distance.euclidean(path_point.xy(), point.xy())
+
+        return min(distance_map, key=distance_map.get)
 
     def find_corners(self, image, min_distance, window_size):
         """
@@ -97,13 +108,40 @@ class Path:
 
         return paths
 
-    def nearest_neighbour(self, point):
-        distance_map = {}
+    # def simple_cull(self, n=5):
+    #     """
+    #     Discard all but the nth Points.
+    #
+    #     :return:
+    #     """
+    #
+    #     remaining_points = []
+    #     for i, point in enumerate(self.points):
+    #         if i % n == 0:
+    #             remaining_points.append(point)
+    #
+    #     self.points = remaining_points
 
-        for path_point in self.points:
-            distance_map[path_point] = spatial.distance.euclidean(path_point.xy(), point.xy())
+    # def optimise(self):
+    #     coords = [point.xy() for point in self.points]
+    #     optimised_coords = rdp(coords, 1)
+    #     self.points = [Point(coord[0], coord[1]) for coord in optimised_coords]
 
-        return min(distance_map, key=distance_map.get)
+    def validate(self, surface):
+        """
+        For a Path to be meaningful, all its Points should lie on the surface such that the underlying
+        surface attributes can be queried. If the Path/Points has been generated based on find_contours, it is possible
+        that inaccuracies can place the location slightly off the surface.
+
+        :return:
+        """
+        [point.validate(surface) for point in self.points]
+
+    def optimise(self):
+        coords = [point.xy() for point in self.points]
+        coords = np.array(coords)
+        optimised_coords = measure.approximate_polygon(coords, 1)
+        self.points = [Point(coord[0], coord[1]) for coord in optimised_coords]
 
 
 if __name__ == "__main__":

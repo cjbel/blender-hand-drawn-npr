@@ -4,6 +4,7 @@ A Silhouette is a collection of Paths which capture the silhouette of the render
 
 from blender_hand_drawn_npr.point import Point
 from blender_hand_drawn_npr.path import Path
+from blender_hand_drawn_npr.stroke import Stroke
 
 from skimage import measure, feature, io
 import numpy as np
@@ -11,9 +12,11 @@ import numpy as np
 
 class Silhouette:
 
-    def __init__(self, surface):
-        self.paths = None
+    def __init__(self, layer, surface):
+        self.layer = layer
         self.surface = surface
+        self.paths = []
+        self.strokes = []
 
     def generate(self):
         """
@@ -30,18 +33,23 @@ class Silhouette:
         path = Path([Point(coord[1], coord[0]) for coord in contours])
 
         # Initial Path must be split into multiple Paths if corners are present.
-        paths = []
         if path.find_corners(self.surface.obj_image, 50, 13):
-            paths += path.split_corners()
+            self.paths += path.split_corners()
         else:
-            paths.append(path)
+            self.paths.append(path)
 
-        test_result = np.zeros_like(self.surface.obj_image)
-        tone = 0.2
-        for path in paths:
-            # print(path.first_last_points())
-            for point in path.points:
-                test_result[point.rc()] = tone
-            tone += 0.2
+        for path in self.paths:
+            path.validate(self.surface)
+            path.optimise()
+            stroke = Stroke(path, self.layer, self.surface)
+            stroke.generate_svg()
+            self.strokes.append(stroke)
 
-        io.imsave("/tmp/img.png", test_result)
+        # test_result = np.zeros_like(self.surface.obj_image)
+        # tone = 0.2
+        # for path in self.paths:
+        #     for point in path.points:
+        #         test_result[point.rc()] = tone
+        #     tone += 0.2
+        #
+        # io.imsave("/tmp/img.png", test_result)

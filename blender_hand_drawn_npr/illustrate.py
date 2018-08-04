@@ -9,6 +9,7 @@ import os
 import tempfile
 import logging
 from collections import namedtuple
+import svgwrite
 
 # TODO: Temp imports
 import matplotlib.pyplot as plt
@@ -35,6 +36,9 @@ class Illustrator:
         self.surface.init_norm_image(os.path.join(self.img_dir, "Normal0001.tif"))
         self.surface.init_uv_image(os.path.join(self.img_dir, "UV0001.tif"))
 
+        # Temp for testing.
+        self.illustration = svgwrite.Drawing("/tmp/test.svg", (1000, 1000))
+
         # Read render passes.
         # object_image = raster_utils.read_gray_image(os.path.join(self.img_dir,
         #                                                          "IndexOB0001.png"))
@@ -56,7 +60,9 @@ class Illustrator:
         #                               uv=uv_image)
 
 
-        # # Prepare the vector canvas.
+
+
+        # Prepare the vector canvas.
         # out_file = os.path.join(self.img_dir,
         #                         "vector_rendering.svg")  # TODO: Make user-configurable.
         # self.illustration = vector_utils.create_canvas(out_file,
@@ -64,8 +70,16 @@ class Illustrator:
         #                                                self.render_pass.object.shape[0])
 
     def illustrate(self):
-        silhouette = Silhouette(self.surface)
+
+        silhouette = Silhouette(1, self.surface)  # TODO: Make layer User-configurable.
         silhouette.generate()
+        svg_path = self.illustration.path(stroke='black', stroke_width=0.2, fill='none')
+
+        for stroke in silhouette.strokes:
+            svg_path.push(stroke.command)
+            self.illustration.add(svg_path)
+        self.illustration.save()
+
 
     def illustrate_silhouette(self):
 
