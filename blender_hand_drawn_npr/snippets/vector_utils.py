@@ -1,4 +1,4 @@
-import blender_hand_drawn_npr.point_utils as point_utils
+import blender_hand_drawn_npr.snippets.point_utils as point_utils
 import blender_hand_drawn_npr.PathFitter as path_fitter
 
 import numpy as np

@@ -1,21 +1,22 @@
 """
 A Silhouette is a collection of Paths which capture the silhouette of the render subject.
 """
+import logging
 
-from blender_hand_drawn_npr.point import Point
+from skimage import measure
+
 from blender_hand_drawn_npr.path import Path
+from blender_hand_drawn_npr.point import Point
 from blender_hand_drawn_npr.stroke import Stroke
 
-from skimage import measure, feature, io
-import numpy as np
+logger = logging.getLogger(__name__)
 
 
 class Silhouette:
 
-    def __init__(self, layer, surface):
-        self.layer = layer
-        self.surface = surface
+    def __init__(self, surface):
         self.paths = []
+        self.surface = surface
         self.strokes = []
 
     def generate(self):
@@ -24,10 +25,16 @@ class Silhouette:
         :return: A collection of Paths which encompass the silhouette of the render subject.
         """
 
+        logger.info("Finding Paths...")
+
         contours = measure.find_contours(self.surface.obj_image, 0.99)
 
         # Only a single contour is expected since the object image is well-defined.
-        contours = contours[0]
+        try:
+            contours = contours[0]
+        except IndexError:
+            logger.warning("No Paths could be found!")
+            return
 
         # Create the initial Path.
         path = Path([Point(coord[1], coord[0]) for coord in contours])
@@ -38,18 +45,17 @@ class Silhouette:
         else:
             self.paths.append(path)
 
+        logger.info("Paths found: %d", len(self.paths))
+
         for path in self.paths:
             path.validate(self.surface)
             path.optimise()
-            stroke = Stroke(path, self.layer, self.surface)
-            stroke.generate_svg()
+            stroke = Stroke(path, self.surface)
+            stroke.generate_svg_path()
             self.strokes.append(stroke)
 
-        # test_result = np.zeros_like(self.surface.obj_image)
-        # tone = 0.2
-        # for path in self.paths:
-        #     for point in path.points:
-        #         test_result[point.rc()] = tone
-        #     tone += 0.2
-        #
-        # io.imsave("/tmp/img.png", test_result)
+        logger.info("Strokes prepared: %d", len(self.strokes))
+
+
+if __name__ == "__main__":
+    pass

@@ -1,19 +1,24 @@
 """
 A Path is an ordered collection of Points.
 """
+import logging
+from collections import deque
+
+import numpy as np
+from scipy import spatial
+from skimage import measure
+from skimage.feature import corner_peaks, corner_harris, corner_subpix
 
 from blender_hand_drawn_npr.point import Point
-from scipy import spatial
-from skimage.feature import corner_peaks, corner_harris, corner_subpix
-from collections import deque
-# from rdp import rdp
-from skimage import measure
-import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class Path:
 
-    def __init__(self, points=[]):
+    def __init__(self, points=None):
+        if points is None:
+            points = []
         self.points = points
         self.corners = []
 
@@ -108,25 +113,6 @@ class Path:
 
         return paths
 
-    # def simple_cull(self, n=5):
-    #     """
-    #     Discard all but the nth Points.
-    #
-    #     :return:
-    #     """
-    #
-    #     remaining_points = []
-    #     for i, point in enumerate(self.points):
-    #         if i % n == 0:
-    #             remaining_points.append(point)
-    #
-    #     self.points = remaining_points
-
-    # def optimise(self):
-    #     coords = [point.xy() for point in self.points]
-    #     optimised_coords = rdp(coords, 1)
-    #     self.points = [Point(coord[0], coord[1]) for coord in optimised_coords]
-
     def validate(self, surface):
         """
         For a Path to be meaningful, all its Points should lie on the surface such that the underlying
@@ -145,7 +131,4 @@ class Path:
 
 
 if __name__ == "__main__":
-
-    a = [1, 2]
-    path = Path(a)
-    print(path.points)
+    pass

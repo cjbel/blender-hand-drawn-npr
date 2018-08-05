@@ -1,4 +1,3 @@
-from blender_hand_drawn_npr import point_utils
 import svgpathtools as svgp
 import svgwrite
 from collections import namedtuple

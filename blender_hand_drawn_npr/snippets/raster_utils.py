@@ -1,11 +1,8 @@
-import blender_hand_drawn_npr.point_utils as point_utils
+import blender_hand_drawn_npr.snippets.point_utils as point_utils
 
 import logging
 from skimage import io, measure, filters, exposure
 import imageio
-import numpy as np
-from collections import namedtuple
-import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
 

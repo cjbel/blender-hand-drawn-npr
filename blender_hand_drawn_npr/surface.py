@@ -1,6 +1,10 @@
+import logging
 from collections import namedtuple
-from skimage import io, exposure
+
 import imageio
+from skimage import io, exposure
+
+logger = logging.getLogger(__name__)
 
 
 class Surface:
@@ -13,20 +17,24 @@ class Surface:
         self.u_image = None
         self.v_image = None
 
-        self.SurfaceData = namedtuple("SurfaceData", "obj z norm_x norm_y u v")
+        self.SurfaceData = namedtuple("SurfaceData", "obj z diffdir norm_x norm_y u v")
 
     def init_obj_image(self, file_path):
         self.obj_image = io.imread(file_path, as_gray=True)
+        logger.info("Object image loaded: %s", file_path)
 
     def init_z_image(self, file_path):
         self.z_image = io.imread(file_path, as_gray=True)
+        logger.info("Z image loaded: %s", file_path)
 
     def init_diffdir_image(self, file_path):
         self.diffdir_image = io.imread(file_path, as_gray=True)
+        logger.info("Diffdir image loaded: %s", file_path)
 
     def init_norm_image(self, file_path):
         # 16-bit colour-depth, use imageio.
         self.norm_image = imageio.imread(file_path)
+        logger.info("Normal image loaded: %s", file_path)
         # TODO: Break into x and y components instead?
 
     def init_uv_image(self, file_path):
@@ -40,9 +48,12 @@ class Surface:
         # v coordinates are encoded in green channel.
         self.v_image = uv_image[:, :, 1]
 
+        logger.info("UV image loaded.: %s", file_path)
+
     def at_point(self, x, y):
         return self.SurfaceData(obj=self.obj_image[y, x],
                                 z=self.z_image[y, x],
+                                diffdir=self.diffdir_image[y, x],
                                 norm_x="",
                                 norm_y="",
                                 u=self.u_image[y, x],
@@ -50,10 +61,4 @@ class Surface:
 
 
 if __name__ == "__main__":
-
-    surface = Surface()
-    surface.init_obj_image("/tmp/undulating_plane/IndexOB0001.png")
-    surface.init_z_image("/tmp/undulating_plane/Depth0001.png")
-    surface.init_uv_image("/tmp/undulating_plane/UV0001.tif")
-    data = surface.at_point(689, 539)
-    print(data)
+    pass

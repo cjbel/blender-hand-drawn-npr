@@ -1,8 +1,9 @@
 """
 A Point is a location in image x, y coordinate space.
 """
+import logging
 
-import numpy as np
+logger = logging.getLogger(__name__)
 
 
 class Point:
@@ -23,12 +24,6 @@ class Point:
         """
         return int(self.y), int(self.x)
 
-    def surface_point(self, surface):
-        """
-        Transform the point into the nearest coordinate which lies on the surface.
-        :return:
-        """
-
     def is_on_surface(self, surface):
         """
         Test whether the Point is located on the Surface by checking the value of the object map at this Point location.
@@ -44,9 +39,9 @@ class Point:
         self.y = int(round(self.y))
 
         if not self.is_on_surface(surface):
+            logger.info("Invalid Point.")
             print("### INVALID POINT!!! ###")  # TODO: This will probably need to be implemented for the streamlines.
 
 
 if __name__ == "__main__":
-    point = Point(10, 20)
-    print(point)
+    pass

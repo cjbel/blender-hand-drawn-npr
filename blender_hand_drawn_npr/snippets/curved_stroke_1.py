@@ -1,8 +1,7 @@
 from blender_hand_drawn_npr.PathFitter import fitpath, pathtosvg
 from collections import namedtuple
 import svgwrite
-from svgpathtools import parse_path, Line, Path, wsvg, paths2svg, path
-from blender_hand_drawn_npr import point_utils
+from svgpathtools import parse_path, Line, Path
 from rdp import rdp
 
 
