@@ -3,8 +3,8 @@ import os
 
 import svgwrite
 
-from blender_hand_drawn_npr.silhouette import Silhouette
-from blender_hand_drawn_npr.surface import Surface
+from blender_hand_drawn_npr.elements import Silhouette
+from blender_hand_drawn_npr.models import Surface
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,14 @@ class Illustrator:
         silhouette = Silhouette(self.surface)
         silhouette.generate()
 
-        [self.illustration.add(stroke.svg_path) for stroke in silhouette.strokes]
+        [self.illustration.add(stroke.upper_curve.svg_obj) for stroke in silhouette.strokes]
+        [self.illustration.add(stroke.lower_curve.svg_obj) for stroke in silhouette.strokes]
+        [self.illustration.add(stroke.lower_curve.central_curve.svg_obj) for stroke in silhouette.strokes]
+        # p = self.illustration.path(stroke="black", stroke_width=0, fill="black")
+        # for stroke in silhouette.strokes:
+        #     p.push(stroke.d)
+        # self.illustration.add(p)
+
 
     def save(self):
         self.illustration.save()

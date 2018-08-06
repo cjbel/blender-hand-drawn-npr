@@ -3,4 +3,5 @@ imageio
 tifffile
 svgwrite
 rdp
+svgpathtools
 simplification

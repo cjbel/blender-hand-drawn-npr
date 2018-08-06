@@ -69,7 +69,7 @@ class Stroke:
                 surface_data = self.surface.at_point(surface_point.x, surface_point.y)
 
                 # TODO: Think now about how to pass thickness requirements into here.
-                thickness = (1 - surface_data.diffdir) * 2
+                thickness = (1 - surface_data.z) * 10
                 self.__thicknesses.append(thickness)
 
                 # Compute offset coordinates for each side (a and b) of the t-step.

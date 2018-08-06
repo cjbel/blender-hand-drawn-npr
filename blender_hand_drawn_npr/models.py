@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 class Surface:
 
-    def __init__(self):
-        self.obj_image = None
-        self.z_image = None
-        self.diffdir_image = None
-        self.norm_image = None
-        self.u_image = None
-        self.v_image = None
+    def __init__(self, obj_image=None, z_image=None, diffdir_image=None, norm_image=None, u_image=None, v_image=None):
+        self.obj_image = obj_image
+        self.z_image = z_image
+        self.diffdir_image = diffdir_image
+        self.norm_image = norm_image
+        self.u_image = u_image
+        self.v_image = v_image
 
         self.SurfaceData = namedtuple("SurfaceData", "obj z diffdir norm_x norm_y u v")
 

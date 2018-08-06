@@ -1,18 +1,16 @@
-"""
-A Silhouette is a collection of Paths which capture the silhouette of the render subject.
-"""
 import logging
 
 from skimage import measure
 
-from blender_hand_drawn_npr.path import Path
-from blender_hand_drawn_npr.point import Point
-from blender_hand_drawn_npr.snippets.stroke import Stroke
+from blender_hand_drawn_npr.primitives import Point, Path, Stroke
 
 logger = logging.getLogger(__name__)
 
 
 class Silhouette:
+    """
+    A Silhouette is a collection of Paths which capture the silhouette of the render subject.
+    """
 
     def __init__(self, surface):
         self.paths = []
@@ -50,8 +48,11 @@ class Silhouette:
         for path in self.paths:
             path.validate(self.surface)
             path.optimise()
-            stroke = Stroke(path, self.surface)
-            stroke.generate_svg_path()
+            stroke = Stroke(path=path,
+                            fit_error=0.1,
+                            interval=5,
+                            surface=self.surface,
+                            thickness_model=None)
             self.strokes.append(stroke)
 
         logger.info("Strokes prepared: %d", len(self.strokes))
