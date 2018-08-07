@@ -49,14 +49,19 @@ class Silhouette:
 
         for path in self.paths:
             path.validate(self.surface)
-            path.optimise()
 
-            upper_curve = Curve1D(path=path, fit_error=0.2)
-            upper_curve.offset(interval=2, surface=self.surface,
+            interval = 5
+            optimisation_factor = 1
+            fit_error = 0.1
+
+            upper_curve = Curve1D(path=path,
+                                  optimisation_factor=optimisation_factor, fit_error=fit_error)
+            upper_curve.offset(interval=interval, surface=self.surface,
                                thickness_model=None)
 
-            lower_curve = Curve1D(path=path, fit_error=0.2)
-            lower_curve.offset(interval=2, surface=self.surface,
+            lower_curve = Curve1D(path=path,
+                                  optimisation_factor=optimisation_factor, fit_error=fit_error)
+            lower_curve.offset(interval=interval, surface=self.surface,
                                thickness_model=None, positive_direction=False)
 
             stroke = Stroke(upper_curve=upper_curve, lower_curve=lower_curve)

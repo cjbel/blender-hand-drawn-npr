@@ -168,8 +168,9 @@ class Path:
 
 
 class Curve1D:
-    def __init__(self, path, fit_error):
+    def __init__(self, path, optimisation_factor, fit_error):
         self.path = path
+        self.optimisation_factor = optimisation_factor
         self.fit_error = fit_error
 
         self.d = None
@@ -181,9 +182,15 @@ class Curve1D:
 
         self.__generate()
 
-    def __path_fit(self, path, fit_error):
+    def __path_fit(self, path, optimisation_factor, fit_error):
+        logger.debug("Path fitting...")
+
         coords = [point.xy() for point in path.points]
+
+        coords = measure.approximate_polygon(np.array(coords), optimisation_factor)
+
         self.d = pf.pathtosvg((pf.fitpath(coords, fit_error)))
+        logger.debug("D-string: %s", self.d)
 
         # Split the initial move-to from the remainder of the string.
         curve_start_index = self.d.index("C")
@@ -191,9 +198,11 @@ class Curve1D:
         self.d_c = self.d[curve_start_index:]
 
     def __generate(self):
-        self.__path_fit(path=self.path, fit_error=self.fit_error)
+        logger.debug("Generating curve from initial path...")
+        self.__path_fit(path=self.path, optimisation_factor=self.optimisation_factor, fit_error=self.fit_error)
 
     def offset(self, interval, surface, thickness_model, positive_direction=True):
+        logger.debug("Generating offset curve...")
 
         for i, segment in enumerate(svgp.parse_path(self.d)):
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
@@ -213,6 +222,7 @@ class Curve1D:
                 self.interval_points.append(interval_point)
                 # Sometimes the Point will be off the surface due to errors in curve fit. Perform nearest
                 # neighbour to get valid surface attributes, but keep the Point coordinates.
+                # TODO: Shouldnt there be a validity check before calling this to avoid unnecessary calls?
                 surface_point = self.path.nearest_neighbour(interval_point)
                 surface_data = surface.at_point(surface_point.x, surface_point.y)
 
@@ -232,16 +242,15 @@ class Curve1D:
                 offset_point = Point(offset_coord.real, offset_coord.imag)
                 self.offset_points.append(offset_point)
 
-        # Optimise.
         offset_coords = np.array([point.xy() for point in self.offset_points])
-        offset_coords = measure.approximate_polygon(offset_coords, 0.1)
 
         if not positive_direction:
             offset_coords = np.flip(offset_coords, 0)
 
         offset_points = [Point(coord[0], coord[1]) for coord in offset_coords]
 
-        self.__path_fit(path=Path(offset_points), fit_error=self.fit_error)
+        self.__path_fit(path=Path(offset_points), optimisation_factor=self.optimisation_factor,
+                        fit_error=self.fit_error)
 
 
 class Stroke:
@@ -301,10 +310,10 @@ if __name__ == "__main__":
                       u_image=np.zeros((100, 100)),
                       v_image=np.zeros((100, 100)))
 
-    upper_curve = Curve1D(path=path, fit_error=0.1)
+    upper_curve = Curve1D(path=path, optimisation_factor=1, fit_error=0.1)
     upper_curve.offset(interval=2, surface=surface, thickness_model=None)
 
-    lower_curve = Curve1D(path=path, fit_error=0.1)
+    lower_curve = Curve1D(path=path, optimisation_factor=1, fit_error=0.1)
     lower_curve.offset(interval=2, surface=surface, thickness_model=None, positive_direction=False)
 
     stroke = Stroke(lower_curve, upper_curve)
