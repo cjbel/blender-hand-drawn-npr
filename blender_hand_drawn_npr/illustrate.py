@@ -27,17 +27,11 @@ class Illustrator:
         self.illustration = svgwrite.Drawing(os.path.join(self.img_dir, self.out_filename), illustration_dimensions)
 
     def illustrate(self):
-        silhouette = Silhouette(self.surface)
+        colour = "black"
+        silhouette = Silhouette(surface=self.surface, colour=colour)
         silhouette.generate()
 
-        [self.illustration.add(stroke.upper_curve.svg_obj) for stroke in silhouette.strokes]
-        [self.illustration.add(stroke.lower_curve.svg_obj) for stroke in silhouette.strokes]
-        [self.illustration.add(stroke.lower_curve.central_curve.svg_obj) for stroke in silhouette.strokes]
-        # p = self.illustration.path(stroke="black", stroke_width=0, fill="black")
-        # for stroke in silhouette.strokes:
-        #     p.push(stroke.d)
-        # self.illustration.add(p)
-
+        [self.illustration.add(stroke.svg_obj) for stroke in silhouette.strokes]
 
     def save(self):
         self.illustration.save()

@@ -19,6 +19,7 @@ class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+        self.svg_obj = svgwrite.shapes.Circle(center=(str(self.x), str(self.y)), r=0.1, fill="green", stroke_width=0)
 
     def __repr__(self):
         return str(self.xy())
@@ -205,25 +206,21 @@ class PathfittedCurve(SVG1DCurve):
 
 
 class OffsetCurve(SVG1DCurve):
-    def __init__(self, path, fit_error, interval, surface, thickness_model, positive_direction=True):
+    def __init__(self, base_curve, interval, surface, thickness_model, positive_direction=True):
         super().__init__()
-        self.path = path
-        self.fit_error = fit_error
+        self.base_curve = base_curve
         self.interval = interval
         self.surface = surface
         self.thickness_model = thickness_model
         self.positive_direction = positive_direction
 
-        self.central_curve = None
         self.interval_points = []
         self.offset_points = []
 
         self.__generate()
 
     def __generate(self):
-        self.central_curve = PathfittedCurve(self.path, self.fit_error)
-
-        for i, segment in enumerate(self.central_curve.svgpathtool_obj):
+        for i, segment in enumerate(self.base_curve.svgpathtool_obj):
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
             t_step = self.interval / segment.length()
@@ -232,7 +229,7 @@ class OffsetCurve(SVG1DCurve):
             # endpoint of a segment (t = 1) is captured only if processing the final segment of the overall
             # construction curve.
             t = arange(0, 1, t_step)
-            if i == len(self.central_curve.svgpathtool_obj) - 1 and (1 not in t):
+            if i == len(self.base_curve.svgpathtool_obj) - 1 and (1 not in t):
                 t = np.append(t, 1)
 
             for step in t:
@@ -241,7 +238,7 @@ class OffsetCurve(SVG1DCurve):
                 self.interval_points.append(interval_point)
                 # Sometimes the Point will be off the surface due to errors in curve fit. Perform nearest
                 # neighbour to get valid surface attributes, but keep the Point coordinates.
-                surface_point = self.path.nearest_neighbour(interval_point)
+                surface_point = self.base_curve.path.nearest_neighbour(interval_point)
                 surface_data = self.surface.at_point(surface_point.x, surface_point.y)
 
                 # TODO: Think now about how to pass thickness requirements into here.
@@ -270,7 +267,7 @@ class OffsetCurve(SVG1DCurve):
         offset_points = [Point(coord[0], coord[1]) for coord in offset_coords]
 
         offset_curve = PathfittedCurve(path=Path(offset_points),
-                                       fit_error=self.fit_error)
+                                       fit_error=self.base_curve.fit_error)
 
         self.d = offset_curve.d
         self.d_m = offset_curve.d_m
@@ -280,32 +277,15 @@ class OffsetCurve(SVG1DCurve):
 
 
 class Stroke(SVGPath):
-    def __init__(self, path, fit_error, interval, surface, thickness_model):
+    def __init__(self, upper_curve, lower_curve, svg_path):
         super().__init__()
-        self.path = path
-        self.fit_error = fit_error
-        self.interval = interval
-        self.surface = surface
-        self.thickness_model = thickness_model
-
-        self.upper_curve = None
-        self.lower_curve = None
+        self.upper_curve = upper_curve
+        self.lower_curve = lower_curve
+        self.svg_obj = svg_path
 
         self.__generate()
 
     def __generate(self):
-        self.upper_curve = OffsetCurve(path=self.path,
-                                       fit_error=self.fit_error,
-                                       interval=self.interval,
-                                       surface=self.surface,
-                                       thickness_model=self.thickness_model)
-        self.lower_curve = OffsetCurve(path=self.path,
-                                       fit_error=self.fit_error,
-                                       interval=self.interval,
-                                       surface=self.surface,
-                                       thickness_model=self.thickness_model,
-                                       positive_direction=False)
-
         upper_curve_start = (self.upper_curve.svgpathtool_obj.start.real,
                              self.upper_curve.svgpathtool_obj.start.imag)
         upper_curve_end = (self.upper_curve.svgpathtool_obj.end.real,
@@ -318,8 +298,6 @@ class Stroke(SVGPath):
 
         r1 = spatial.distance.euclidean(upper_curve_end, lower_curve_start) / 2
         r2 = spatial.distance.euclidean(lower_curve_end, upper_curve_start) / 2
-
-        self.svg_obj = svgwrite.path.Path(stroke="blue", stroke_width=0.2, stroke_dasharray=(0.2, 0.2), fill="none")
 
         self.svg_obj.push(self.upper_curve.d)
 
@@ -348,6 +326,7 @@ class Stroke(SVGPath):
 
 
 if __name__ == "__main__":
+    path = Path([Point(50, 20), Point(20, 50), Point(50, 80)])
     surface = Surface(obj_image=np.zeros((100, 100)),
                       z_image=np.zeros((100, 100)),
                       diffdir_image=np.zeros((100, 100)),
@@ -355,13 +334,18 @@ if __name__ == "__main__":
                       u_image=np.zeros((100, 100)),
                       v_image=np.zeros((100, 100)))
 
-    curve = Stroke(path=Path([Point(10, 20), Point(90, 20)]),
-                   fit_error=0.5,
-                   interval=1,
-                   surface=surface,
-                   thickness_model=None)
+    construction_curve = PathfittedCurve(path, .5)
+    upper_curve = OffsetCurve(base_curve=construction_curve,
+                              interval=2,
+                              surface=surface,
+                              thickness_model=None)
+    lower_curve = OffsetCurve(base_curve=construction_curve,
+                              interval=2,
+                              surface=surface,
+                              thickness_model=None,
+                              positive_direction=False)
+    stroke = Stroke(lower_curve, upper_curve)
 
     drawing = svgwrite.Drawing("/tmp/out.svg", (100, 100))
-    drawing.add(curve.svg_obj)
-    drawing.add(curve.upper_curve.central_curve.svg_obj)
+    drawing.add(stroke.svg_obj)
     drawing.save()
