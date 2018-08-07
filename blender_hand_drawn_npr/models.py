@@ -51,13 +51,19 @@ class Surface:
         logger.info("UV image loaded.: %s", file_path)
 
     def at_point(self, x, y):
-        return self.SurfaceData(obj=self.obj_image[y, x],
-                                z=self.z_image[y, x],
-                                diffdir=self.diffdir_image[y, x],
-                                norm_x="",
-                                norm_y="",
-                                u=self.u_image[y, x],
-                                v=self.v_image[y, x])
+        assert x >= 0
+        assert y >= 0
+
+        surface_data = self.SurfaceData(obj=self.obj_image[y, x],
+                                        z=self.z_image[y, x],
+                                        diffdir=self.diffdir_image[y, x],
+                                        norm_x="",
+                                        norm_y="",
+                                        u=self.u_image[y, x],
+                                        v=self.v_image[y, x])
+        # logger.debug("Surface data at point (%d, %d): %s", x, y, surface_data)
+
+        return surface_data
 
 
 if __name__ == "__main__":

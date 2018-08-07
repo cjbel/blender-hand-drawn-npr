@@ -3,7 +3,7 @@ import logging
 import svgwrite
 from skimage import measure
 
-from blender_hand_drawn_npr.primitives import Point, Path, Curve1D, Stroke
+from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
 
 logger = logging.getLogger(__name__)
 
@@ -25,19 +25,17 @@ class Silhouette:
         :return: A collection of Paths which encompass the silhouette of the render subject.
         """
 
-        logger.info("Finding Paths...")
-
         contours = measure.find_contours(self.surface.obj_image, 0.99)
 
         # Only a single contour is expected since the object image is well-defined.
         try:
             contours = contours[0]
         except IndexError:
-            logger.warning("No Paths could be found!")
+            logger.warning("No silhouette Paths could be found!")
             return
 
         # Create the initial Path.
-        path = Path([Point(coord[1], coord[0]) for coord in contours])
+        path = Path([[coord[1], coord[0]] for coord in contours])
 
         # Initial Path must be split into multiple Paths if corners are present.
         if path.find_corners(self.surface.obj_image, 50, 13):
@@ -45,7 +43,7 @@ class Silhouette:
         else:
             self.paths.append(path)
 
-        logger.info("Paths found: %d", len(self.paths))
+        logger.info("Silhouette Paths found: %d", len(self.paths))
 
         for path in self.paths:
             path.validate(self.surface)
@@ -71,7 +69,7 @@ class Silhouette:
 
             self.strokes.append(svg_stroke)
 
-        logger.info("Strokes prepared: %d", len(self.strokes))
+        logger.info("Silhouette Strokes prepared: %d", len(self.strokes))
 
 
 if __name__ == "__main__":

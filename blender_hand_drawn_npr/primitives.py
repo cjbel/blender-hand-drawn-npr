@@ -14,92 +14,36 @@ from blender_hand_drawn_npr.models import Surface
 logger = logging.getLogger(__name__)
 
 
-class Point:
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __repr__(self):
-        return str(self.xy())
-
-    def xy(self):
-        return self.x, self.y
-
-    def rc(self):
-        """
-        :return: the coordinate value in format (row, column).
-        """
-        return int(self.y), int(self.x)
-
-    def is_on_surface(self, surface):
-        """
-        Test whether the Point is located on the Surface by checking the value of the object map at this Point location.
-        :param surface:
-        :return:
-        """
-
-        surface_data = surface.at_point(self.x, self.y)
-        return surface_data.obj != 0
-
-    def validate(self, surface):
-        self.x = int(round(self.x))
-        self.y = int(round(self.y))
-
-        if not self.is_on_surface(surface):
-            logger.info("Invalid Point.")
-            print("### INVALID POINT!!! ###")  # TODO: This will probably need to be implemented for the streamlines.
-
-
 class Path:
 
-    def __init__(self, points=None):
-        if points is None:
-            points = []
+    def __init__(self, points):
         self.points = points
         self.corners = []
 
-    def add_point(self, point):
-        """
-        Add a single Point.
-        """
-        self.points.append(point)
+    def __round(self):
+        self.points = [[int(round(point[0])), int(round(point[1]))] for point in self.points]
 
-    def add_points(self, points):
-        """
-        Add a list of Points.
-        """
-        self.points += points
+    def __is_valid(self, point, surface):
+        surface_data = surface.at_point(point[0], point[1])
+        is_valid = surface_data.obj != 0
+        return is_valid
 
-    def start_end_points(self):
-        """
-        :return: Start and end Points of the Path.
-        """
+    def nearest_neighbour(self, target_point):
 
-        return self.points[0], self.points[-1]
+        # TODO: Needs tested, don't think this is working.
 
-    def remove_duplicates(self):
-        # TODO: Doesnt make sense if testing floats, very small hit rate.
-        unique_points = []
-        seen = set()
-        for point in self.points:
-            if (point.x, point.y) not in seen:
-                seen.add((point.x, point.y))
-                unique_points.append(point)
-
-        self.points = unique_points
-
-    def nearest_neighbour(self, point):
         distance_map = {}
 
-        for path_point in self.points:
-            distance_map[path_point] = spatial.distance.euclidean(path_point.xy(), point.xy())
+        for i, path_point in enumerate(self.points):
+            distance_map[i] = spatial.distance.euclidean(path_point, target_point)
 
-        return min(distance_map, key=distance_map.get)
+        min_loc = min(distance_map, key=distance_map.get)
+
+        return self.points[min_loc]
 
     def find_corners(self, image, min_distance, window_size):
         """
-        Locate Points which exist on the corners of the specified image.
+        Locate points which exist on the corners of the specified image.
 
         :param image:
         :param min_distance:
@@ -114,10 +58,9 @@ class Path:
             # Locate a more accurate subpixel location of the corners.
             subpix_rcs = corner_subpix(image, corner_rcs, window_size)
 
-            # Locate the nearest existing Point closest to each subpixel location.
+            # Locate the nearest existing point closest to each subpixel location.
             for rc in subpix_rcs:
-                subpix_corner = Point(rc[1], rc[0])
-                corner = self.nearest_neighbour(subpix_corner)
+                corner = self.nearest_neighbour((rc[1], rc[0]))
                 self.corners.append(corner)
 
         return self.corners
@@ -131,7 +74,7 @@ class Path:
             corner_indices.append(self.points.index(corner))
         corner_indices.sort()
 
-        # Rebase the list of Points to ensure the first Point in the list is a corner.
+        # Rebase the list of points to ensure the first point in the list is a corner.
         rebase_value = corner_indices[0]
         rebased_indices = [x - rebase_value for x in corner_indices]
         rebased_points = deque(self.points)
@@ -152,19 +95,40 @@ class Path:
 
     def validate(self, surface):
         """
-        For a Path to be meaningful, all its Points should lie on the surface such that the underlying
-        surface attributes can be queried. If the Path/Points has been generated based on find_contours, it is possible
-        that inaccuracies can place the location slightly off the surface.
+        In a meaningful path, all points lie on the surface such that the underlying surface attributes can be queried.
+        If the Path has been generated based on find_contours, it is possible that inaccuracies can place the location
+        slightly off the surface.
 
         :return:
         """
-        [point.validate(surface) for point in self.points]
+        self.__round()
 
-    def optimise(self):
-        coords = [point.xy() for point in self.points]
-        coords = np.array(coords)
-        optimised_coords = measure.approximate_polygon(coords, 1)
-        self.points = [Point(coord[0], coord[1]) for coord in optimised_coords]
+        for i, point in enumerate(self.points):
+
+            if not self.__is_valid(point, surface):
+                # Need to find another pixel nearby which passes the test. Due to the nature of rounding, a pixel with
+                # valid attributes will be found within 1 pixel of the original. So first, identify translations
+                # required to shift pixel position by 1 pixel in each direction.
+                pixel_translations = [[1, 0],  # x+
+                                      [0, 1],  # y+
+                                      [-1, 0],  # x-
+                                      [0, -1]]  # y-
+
+                # Now evaluate the attributes of each neighbour.
+                for pixel_translation in pixel_translations:
+                    candidate_point = [point[0] + pixel_translation[0],
+                                       point[1] + pixel_translation[1]]
+
+                    try:
+                        if self.__is_valid(candidate_point, surface):
+                            logger.debug("Invalid: %s replaced with: %s", point, candidate_point)
+                            self.points[i] = candidate_point
+                            break
+
+                    except AssertionError:
+                        logger.debug("Candidate point out of allowable range: %s", candidate_point)
+
+                logger.warning("A valid point could not be found!")
 
 
 class Curve1D:
@@ -183,14 +147,9 @@ class Curve1D:
         self.__generate()
 
     def __path_fit(self, path, optimisation_factor, fit_error):
-        logger.debug("Path fitting...")
+        path = measure.approximate_polygon(np.array(path.points), optimisation_factor)
 
-        coords = [point.xy() for point in path.points]
-
-        coords = measure.approximate_polygon(np.array(coords), optimisation_factor)
-
-        self.d = pf.pathtosvg((pf.fitpath(coords, fit_error)))
-        logger.debug("D-string: %s", self.d)
+        self.d = pf.pathtosvg((pf.fitpath(path, fit_error)))
 
         # Split the initial move-to from the remainder of the string.
         curve_start_index = self.d.index("C")
@@ -198,12 +157,9 @@ class Curve1D:
         self.d_c = self.d[curve_start_index:]
 
     def __generate(self):
-        logger.debug("Generating curve from initial path...")
         self.__path_fit(path=self.path, optimisation_factor=self.optimisation_factor, fit_error=self.fit_error)
 
     def offset(self, interval, surface, thickness_model, positive_direction=True):
-        logger.debug("Generating offset curve...")
-
         for i, segment in enumerate(svgp.parse_path(self.d)):
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
@@ -217,14 +173,14 @@ class Curve1D:
                 t = np.append(t, 1)
 
             for step in t:
-                # Extract the coordinates at this t-step and create a Point.
-                interval_point = Point(segment.point(step).real, segment.point(step).imag)
+                # Extract the coordinates at this t-step.
+                interval_point = [segment.point(step).real, segment.point(step).imag]
                 self.interval_points.append(interval_point)
-                # Sometimes the Point will be off the surface due to errors in curve fit. Perform nearest
-                # neighbour to get valid surface attributes, but keep the Point coordinates.
+                # Sometimes the point will be off the surface due to errors in curve fit. Perform nearest
+                # neighbour to get valid surface attributes, but keep the point coordinates.
                 # TODO: Shouldnt there be a validity check before calling this to avoid unnecessary calls?
                 surface_point = self.path.nearest_neighbour(interval_point)
-                surface_data = surface.at_point(surface_point.x, surface_point.y)
+                surface_data = surface.at_point(surface_point[0], surface_point[1])
 
                 # TODO: Think now about how to pass thickness requirements into here.
                 # thickness = ((1 - surface_data.z) * 4) + 0.2
@@ -239,17 +195,15 @@ class Curve1D:
                     dir = -1
 
                 offset_coord = segment.point(step) + (thickness * normal * dir)
-                offset_point = Point(offset_coord.real, offset_coord.imag)
+                offset_point = [offset_coord.real, offset_coord.imag]
                 self.offset_points.append(offset_point)
 
-        offset_coords = np.array([point.xy() for point in self.offset_points])
-
         if not positive_direction:
-            offset_coords = np.flip(offset_coords, 0)
+            offset_points = np.array(self.offset_points)
+            offset_points = np.flip(offset_points, 0)
+            self.offset_points = list(offset_points)
 
-        offset_points = [Point(coord[0], coord[1]) for coord in offset_coords]
-
-        self.__path_fit(path=Path(offset_points), optimisation_factor=self.optimisation_factor,
+        self.__path_fit(path=Path(self.offset_points), optimisation_factor=self.optimisation_factor,
                         fit_error=self.fit_error)
 
 
@@ -302,13 +256,20 @@ class Stroke:
 
 
 if __name__ == "__main__":
-    path = Path([Point(50, 20), Point(20, 50), Point(50, 80)])
-    surface = Surface(obj_image=np.zeros((100, 100)),
-                      z_image=np.zeros((100, 100)),
-                      diffdir_image=np.zeros((100, 100)),
-                      norm_image=np.zeros((100, 100)),
-                      u_image=np.zeros((100, 100)),
-                      v_image=np.zeros((100, 100)))
+
+    # print(spatial.distance.euclidean([1, 0], [2, 0]))
+
+    fake_image = np.ones((100, 100))
+    # fake_image[1, 1] = 1
+    surface = Surface(obj_image=fake_image,
+                      z_image=fake_image,
+                      diffdir_image=fake_image,
+                      norm_image=fake_image,
+                      u_image=fake_image,
+                      v_image=fake_image)
+
+    path = Path([[50, 20], [20, 50], [50, 80]])
+    path.validate(surface)
 
     upper_curve = Curve1D(path=path, optimisation_factor=1, fit_error=0.1)
     upper_curve.offset(interval=2, surface=surface, thickness_model=None)
