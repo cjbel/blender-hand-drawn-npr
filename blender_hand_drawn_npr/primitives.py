@@ -19,7 +19,6 @@ class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.svg_obj = svgwrite.shapes.Circle(center=(str(self.x), str(self.y)), r=0.1, fill="green", stroke_width=0)
 
     def __repr__(self):
         return str(self.xy())
@@ -168,68 +167,44 @@ class Path:
         self.points = [Point(coord[0], coord[1]) for coord in optimised_coords]
 
 
-class SVGPath:
-    def __init__(self):
-        self.d = None
-        self.svg_obj = None
-        self.svgpathtool_obj = None
-
-
-class SVG1DCurve(SVGPath):
-    def __init__(self):
-        super().__init__()
-        self.d_m = None
-        self.d_c = None
-
-
-class PathfittedCurve(SVG1DCurve):
+class Curve1D:
     def __init__(self, path, fit_error):
-        super().__init__()
         self.path = path
         self.fit_error = fit_error
 
-        self.__generate()
-
-    def __generate(self):
-        coords = [point.xy() for point in self.path.points]
-        self.d = pf.pathtosvg((pf.fitpath(coords, self.fit_error)))
-
-        # Split the initial move-to from the remainder of the string.
-        curve_start_index = self.d.index("C")
-        self.d_m = self.d[0:curve_start_index - 1]
-        self.d_c = self.d[curve_start_index:]
-
-        self.svg_obj = svgwrite.path.Path(stroke="red", stroke_width=0.2, stroke_dasharray=(0.2, 0.2), fill="none")
-        self.svg_obj.push(self.d)
-
-        self.svgpathtool_obj = svgp.parse_path(self.d)
-
-
-class OffsetCurve(SVG1DCurve):
-    def __init__(self, base_curve, interval, surface, thickness_model, positive_direction=True):
-        super().__init__()
-        self.base_curve = base_curve
-        self.interval = interval
-        self.surface = surface
-        self.thickness_model = thickness_model
-        self.positive_direction = positive_direction
+        self.d = None
+        self.d_c = None
+        self.d_m = None
 
         self.interval_points = []
         self.offset_points = []
 
         self.__generate()
 
+    def __path_fit(self, path, fit_error):
+        coords = [point.xy() for point in path.points]
+        self.d = pf.pathtosvg((pf.fitpath(coords, fit_error)))
+
+        # Split the initial move-to from the remainder of the string.
+        curve_start_index = self.d.index("C")
+        self.d_m = self.d[0:curve_start_index - 1]
+        self.d_c = self.d[curve_start_index:]
+
     def __generate(self):
-        for i, segment in enumerate(self.base_curve.svgpathtool_obj):
+        self.__path_fit(path=self.path, fit_error=self.fit_error)
+
+    def offset(self, interval, surface, thickness_model, positive_direction=True):
+
+        for i, segment in enumerate(svgp.parse_path(self.d)):
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
-            t_step = self.interval / segment.length()
+            t_step = interval / segment.length()
 
             # Generate a list of parameter values. To avoid duplicate construction Points between segments, ensure the
             # endpoint of a segment (t = 1) is captured only if processing the final segment of the overall
             # construction curve.
             t = arange(0, 1, t_step)
-            if i == len(self.base_curve.svgpathtool_obj) - 1 and (1 not in t):
+            if i == len(svgp.parse_path(self.d)) - 1 and (1 not in t):
                 t = np.append(t, 1)
 
             for step in t:
@@ -238,17 +213,17 @@ class OffsetCurve(SVG1DCurve):
                 self.interval_points.append(interval_point)
                 # Sometimes the Point will be off the surface due to errors in curve fit. Perform nearest
                 # neighbour to get valid surface attributes, but keep the Point coordinates.
-                surface_point = self.base_curve.path.nearest_neighbour(interval_point)
-                surface_data = self.surface.at_point(surface_point.x, surface_point.y)
+                surface_point = self.path.nearest_neighbour(interval_point)
+                surface_data = surface.at_point(surface_point.x, surface_point.y)
 
                 # TODO: Think now about how to pass thickness requirements into here.
-                thickness = ((1 - surface_data.z) * 4) + 0.2
-                # thickness = 10
+                # thickness = ((1 - surface_data.z) * 4) + 0.2
+                thickness = 4
 
                 # Compute offset coordinates for each side (a and b) of the t-step.
                 normal = segment.normal(step)
 
-                if self.positive_direction:
+                if positive_direction:
                     dir = 1
                 else:
                     dir = -1
@@ -261,68 +236,60 @@ class OffsetCurve(SVG1DCurve):
         offset_coords = np.array([point.xy() for point in self.offset_points])
         offset_coords = measure.approximate_polygon(offset_coords, 0.1)
 
-        if not self.positive_direction:
+        if not positive_direction:
             offset_coords = np.flip(offset_coords, 0)
 
         offset_points = [Point(coord[0], coord[1]) for coord in offset_coords]
 
-        offset_curve = PathfittedCurve(path=Path(offset_points),
-                                       fit_error=self.base_curve.fit_error)
-
-        self.d = offset_curve.d
-        self.d_m = offset_curve.d_m
-        self.d_c = offset_curve.d_c
-        self.svg_obj = offset_curve.svg_obj
-        self.svgpathtool_obj = offset_curve.svgpathtool_obj
+        self.__path_fit(path=Path(offset_points), fit_error=self.fit_error)
 
 
-class Stroke(SVGPath):
-    def __init__(self, upper_curve, lower_curve, svg_path):
+class Stroke:
+    def __init__(self, upper_curve, lower_curve):
         super().__init__()
         self.upper_curve = upper_curve
         self.lower_curve = lower_curve
-        self.svg_obj = svg_path
 
         self.__generate()
 
     def __generate(self):
-        upper_curve_start = (self.upper_curve.svgpathtool_obj.start.real,
-                             self.upper_curve.svgpathtool_obj.start.imag)
-        upper_curve_end = (self.upper_curve.svgpathtool_obj.end.real,
-                           self.upper_curve.svgpathtool_obj.end.imag)
+        upper_curve = svgp.parse_path(self.upper_curve.d)
+        upper_curve_start = (upper_curve.start.real,
+                             upper_curve.start.imag)
+        upper_curve_end = (upper_curve.end.real,
+                           upper_curve.end.imag)
 
-        lower_curve_start = (self.lower_curve.svgpathtool_obj.start.real,
-                             self.lower_curve.svgpathtool_obj.start.imag)
-        lower_curve_end = (self.lower_curve.svgpathtool_obj.end.real,
-                           self.lower_curve.svgpathtool_obj.end.imag)
+        lower_curve = svgp.parse_path(self.lower_curve.d)
+        lower_curve_start = (lower_curve.start.real,
+                             lower_curve.start.imag)
+        lower_curve_end = (lower_curve.end.real,
+                           lower_curve.end.imag)
 
         r1 = spatial.distance.euclidean(upper_curve_end, lower_curve_start) / 2
         r2 = spatial.distance.euclidean(lower_curve_end, upper_curve_start) / 2
 
-        self.svg_obj.push(self.upper_curve.d)
+        p = svgwrite.path.Path()
+        p.push(self.upper_curve.d)
 
-        self.svg_obj.push("A",
-                          r1, r1,
-                          0,
-                          1, 1,
-                          lower_curve_start[0], lower_curve_start[1])
+        p.push("A",
+               r1, r1,
+               0,
+               1, 1,
+               lower_curve_start[0], lower_curve_start[1])
 
-        self.svg_obj.push(self.lower_curve.d_c)
+        p.push(self.lower_curve.d_c)
 
-        self.svg_obj.push("A",
-                          r2, r2,
-                          0,
-                          1, 1,
-                          upper_curve_start[0], upper_curve_start[1])
+        p.push("A",
+               r2, r2,
+               0,
+               1, 1,
+               upper_curve_start[0], upper_curve_start[1])
 
-        self.svg_obj.push("Z")
+        p.push("Z")
 
         # Call to either tostring or to_xml() is needed to create the dict 'd' attribute.
-        self.svg_obj.tostring()
-        self.d = self.svg_obj.attribs['d']
-
-        print(self.d)
-        self.svgpathtool_obj = svgp.parse_path(self.d)
+        p.tostring()
+        self.d = p.attribs['d']
 
 
 if __name__ == "__main__":
@@ -334,18 +301,16 @@ if __name__ == "__main__":
                       u_image=np.zeros((100, 100)),
                       v_image=np.zeros((100, 100)))
 
-    construction_curve = PathfittedCurve(path, .5)
-    upper_curve = OffsetCurve(base_curve=construction_curve,
-                              interval=2,
-                              surface=surface,
-                              thickness_model=None)
-    lower_curve = OffsetCurve(base_curve=construction_curve,
-                              interval=2,
-                              surface=surface,
-                              thickness_model=None,
-                              positive_direction=False)
+    upper_curve = Curve1D(path=path, fit_error=0.1)
+    upper_curve.offset(interval=2, surface=surface, thickness_model=None)
+
+    lower_curve = Curve1D(path=path, fit_error=0.1)
+    lower_curve.offset(interval=2, surface=surface, thickness_model=None, positive_direction=False)
+
     stroke = Stroke(lower_curve, upper_curve)
 
     drawing = svgwrite.Drawing("/tmp/out.svg", (100, 100))
-    drawing.add(stroke.svg_obj)
+    p = drawing.path(stroke_width=0, fill="black")
+    p.push(stroke.d)
+    drawing.add(p)
     drawing.save()

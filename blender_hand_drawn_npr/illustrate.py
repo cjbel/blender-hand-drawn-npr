@@ -31,7 +31,7 @@ class Illustrator:
         silhouette = Silhouette(surface=self.surface, colour=colour)
         silhouette.generate()
 
-        [self.illustration.add(stroke.svg_obj) for stroke in silhouette.strokes]
+        [self.illustration.add(stroke) for stroke in silhouette.strokes]
 
     def save(self):
         self.illustration.save()

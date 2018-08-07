@@ -3,7 +3,7 @@ import logging
 import svgwrite
 from skimage import measure
 
-from blender_hand_drawn_npr.primitives import Point, Path, PathfittedCurve, OffsetCurve, Stroke
+from blender_hand_drawn_npr.primitives import Point, Path, Curve1D, Stroke
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +51,20 @@ class Silhouette:
             path.validate(self.surface)
             path.optimise()
 
-            construction_curve = PathfittedCurve(path=path, fit_error=0.2)
-            upper_curve = OffsetCurve(base_curve=construction_curve, interval=2, surface=self.surface,
-                                      thickness_model=None)
-            lower_curve = OffsetCurve(base_curve=construction_curve, interval=2, surface=self.surface,
-                                      thickness_model=None, positive_direction=False)
+            upper_curve = Curve1D(path=path, fit_error=0.2)
+            upper_curve.offset(interval=2, surface=self.surface,
+                               thickness_model=None)
 
-            svg_path = svgwrite.path.Path(stroke="black", stroke_width=0, fill=self.colour)
-            stroke = Stroke(upper_curve=upper_curve, lower_curve=lower_curve, svg_path=svg_path)
+            lower_curve = Curve1D(path=path, fit_error=0.2)
+            lower_curve.offset(interval=2, surface=self.surface,
+                               thickness_model=None, positive_direction=False)
 
-            self.strokes.append(stroke)
+            stroke = Stroke(upper_curve=upper_curve, lower_curve=lower_curve)
+
+            svg_stroke = svgwrite.path.Path(fill=self.colour, stroke_width=0)
+            svg_stroke.push(stroke.d)
+
+            self.strokes.append(svg_stroke)
 
         logger.info("Strokes prepared: %d", len(self.strokes))
 
