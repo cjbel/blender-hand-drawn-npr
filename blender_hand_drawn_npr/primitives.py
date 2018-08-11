@@ -8,7 +8,7 @@ import svgwrite
 from scipy import arange, spatial
 from scipy.interpolate import interp1d
 from skimage import measure
-from skimage.feature import corner_harris, corner_peaks
+from skimage.feature import corner_harris, corner_peaks, corner_subpix
 
 import blender_hand_drawn_npr.PathFitter as pf
 from blender_hand_drawn_npr.models import Surface
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 Settings = namedtuple("Settings", ["rdp_epsilon",
                                    "curve_fit_error",
                                    "harris_min_distance",
+                                   "subpix_window_size",
                                    "curve_sampling_interval",
                                    "thickness_model",
                                    "stroke_colour",
@@ -65,17 +66,17 @@ class Path:
         # Locate corners, returned values are row/col coordinates (rcs).
         corner_rcs = corner_peaks(corner_harris(image), min_distance)
 
-        # if corner_rcs.any():
-        # # Locate a more accurate subpixel location of the corners.
-        # subpix_rcs = corner_subpix(image, corner_rcs, window_size)
-        #
-        # # Locate the nearest existing point closest to each subpixel location.
-        # for rc in subpix_rcs:
-        #     corner = self.nearest_neighbour((rc[1], rc[0]))
+        if corner_rcs.any():
+        # Locate a more accurate subpixel location of the corners.
+            subpix_rcs = corner_subpix(image, corner_rcs, window_size)
+
+            # Locate the nearest existing point closest to each subpixel location.
+            for rc in subpix_rcs:
+                corner = self.nearest_neighbour((rc[1], rc[0]))
+                self.corners.append(corner)
+        # for corner_rc in corner_rcs:
+        #     corner = self.nearest_neighbour((corner_rc[1], corner_rc[0]))
         #     self.corners.append(corner)
-        for corner_rc in corner_rcs:
-            corner = self.nearest_neighbour((corner_rc[1], corner_rc[0]))
-            self.corners.append(corner)
 
         return self.corners
 
@@ -151,7 +152,7 @@ class Path:
 
     def trim_uv(self, target_intensity, primary_image):
 
-        allowable_deviance = 100
+        allowable_deviance = 30
 
         min_allowable = target_intensity - allowable_deviance
         max_allowable = target_intensity + allowable_deviance
@@ -203,10 +204,10 @@ class Path:
         for i in range(nonzero_idx[0][-1], len(first_derivatives)):
             smoothed.append(0)
 
-        from matplotlib import pyplot
-        pyplot.plot(first_derivatives)
-        pyplot.plot(smoothed)
-        pyplot.show()
+        # from matplotlib import pyplot
+        # pyplot.plot(first_derivatives)
+        # pyplot.plot(smoothed)
+        # pyplot.show()
 
         self.curvatures = smoothed
 
@@ -240,12 +241,19 @@ class Curve1D:
 
         self.interval_points = []
         self.offset_points = []
+        self.optimised_path = []
 
         self.__generate()
 
-    def __path_fit(self, path, optimisation_factor, fit_error):
+    def __path_fit(self, path, fit_error, optimise=False, optimisation_factor=None):
         logger.debug("Starting path fit...")
-        path = measure.approximate_polygon(np.array(path.points), optimisation_factor)
+
+        if optimise:
+            assert optimisation_factor is not None
+            path = measure.approximate_polygon(np.array(path.points), optimisation_factor)
+            self.optimised_path = Path(path.tolist())
+        else:
+            path = np.array(path.points)
 
         self.d = pf.pathtosvg((pf.fitpath(path, fit_error)))
 
@@ -256,7 +264,8 @@ class Curve1D:
         logger.debug("Path fit complete...")
 
     def __generate(self):
-        self.__path_fit(path=self.path, optimisation_factor=self.optimisation_factor, fit_error=self.fit_error)
+        self.__path_fit(path=self.path, fit_error=self.fit_error, optimise=True,
+                        optimisation_factor=self.optimisation_factor)
 
     def offset(self, interval, positive_direction=True):
         logger.debug("Starting offset...")
@@ -271,8 +280,12 @@ class Curve1D:
             # endpoint of a segment (t = 1) is captured only if processing the final segment of the overall
             # construction curve.
             t = arange(0, 1, t_step)
+            logger.debug("T list: %s", t)
             if i == len(svgp.parse_path(self.d)) - 1 and (1 not in t):
                 t = np.append(t, 1)
+
+            # t_step = segment.length() / 3
+            # t = arange(0, 1, t_step)
 
             for step in t:
                 logger.debug("Step: %f", step)
@@ -303,8 +316,7 @@ class Curve1D:
             offset_points = np.flip(offset_points, 0)
             self.offset_points = list(offset_points)
 
-        self.__path_fit(path=Path(self.offset_points), optimisation_factor=self.optimisation_factor,
-                        fit_error=self.fit_error)
+        self.__path_fit(path=Path(self.offset_points), fit_error=self.fit_error, optimise=False)
 
         logger.debug("Offset complete.")
 
