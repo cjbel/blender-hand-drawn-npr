@@ -1,12 +1,14 @@
 import logging
+import math
 from collections import deque, namedtuple
 
 import numpy as np
 import svgpathtools as svgp
 import svgwrite
 from scipy import arange, spatial
+from scipy.interpolate import interp1d
 from skimage import measure
-from skimage.feature import corner_harris, corner_peaks, corner_subpix
+from skimage.feature import corner_harris, corner_peaks
 
 import blender_hand_drawn_npr.PathFitter as pf
 from blender_hand_drawn_npr.models import Surface
@@ -19,7 +21,13 @@ Settings = namedtuple("Settings", ["rdp_epsilon",
                                    "curve_sampling_interval",
                                    "thickness_model",
                                    "stroke_colour",
-                                   "streamline_segments"])
+                                   "streamline_segments",
+                                   "thickness_parameters"])
+
+ThicknessParameters = namedtuple("ThicknessParameters", ["const",
+                                                         "z",
+                                                         "diffdir",
+                                                         "curvature"])
 
 
 class Path:
@@ -27,6 +35,7 @@ class Path:
     def __init__(self, points):
         self.points = points
         self.thicknesses = []
+        self.curvatures = []
         self.corners = []
 
     def round(self):
@@ -57,13 +66,13 @@ class Path:
         corner_rcs = corner_peaks(corner_harris(image), min_distance)
 
         # if corner_rcs.any():
-            # # Locate a more accurate subpixel location of the corners.
-            # subpix_rcs = corner_subpix(image, corner_rcs, window_size)
-            #
-            # # Locate the nearest existing point closest to each subpixel location.
-            # for rc in subpix_rcs:
-            #     corner = self.nearest_neighbour((rc[1], rc[0]))
-            #     self.corners.append(corner)
+        # # Locate a more accurate subpixel location of the corners.
+        # subpix_rcs = corner_subpix(image, corner_rcs, window_size)
+        #
+        # # Locate the nearest existing point closest to each subpixel location.
+        # for rc in subpix_rcs:
+        #     corner = self.nearest_neighbour((rc[1], rc[0]))
+        #     self.corners.append(corner)
         for corner_rc in corner_rcs:
             corner = self.nearest_neighbour((corner_rc[1], corner_rc[0]))
             self.corners.append(corner)
@@ -130,7 +139,7 @@ class Path:
 
                     try:
                         if surface.is_valid(candidate_point):
-                            logger.debug("Invalid: %s replaced with: %s", point, candidate_point)
+                            # logger.debug("Invalid: %s replaced with: %s", point, candidate_point)
                             self.points[i] = candidate_point
                             break
                         elif i == len(pixel_translations) - 1:
@@ -151,10 +160,72 @@ class Path:
         for point in self.points:
             if min_allowable <= primary_image[point[1], point[0]] <= max_allowable:
                 valid_points.append([point[0], point[1]])
+
+        logger.debug("Valid points after UV trim: %d", len(valid_points))
         self.points = valid_points
 
-    def compute_thicknesses(self, surface):
-        self.thicknesses = [2] * len(self.points)
+    def compute_curvatures(self, primary_image, surface):
+
+        # Compute first derivatives of planar magnitudes.
+        first_derivatives = []
+        for i in range(0, len(self.points) - 1):
+            cur_dim = primary_image[self.points[i][1], self.points[i][0]]
+            cur_z = surface.at_point(self.points[i][0], self.points[i][1]).norm_z
+            cur_magnitude = math.hypot(cur_dim, cur_z)
+
+            next_dim = primary_image[self.points[i + 1][1], self.points[i + 1][0]]
+            next_z = surface.at_point(self.points[i + 1][0], self.points[i + 1][1]).norm_z
+            next_magnitude = math.hypot(next_dim, next_z)
+
+            delta = abs(cur_magnitude - next_magnitude)
+            first_derivatives.append(delta)
+
+        first_derivatives = np.array(first_derivatives)
+        nonzero_idx = np.nonzero(first_derivatives)
+        nonzero_vals = first_derivatives[nonzero_idx]
+
+        smoothed = []
+
+        # For streamlines with zero curvature along their lengths there is no need to need to continue.
+        if len(nonzero_idx[0]) == 0:
+            self.curvatures = first_derivatives
+            return
+
+        # Pad start with zeros as needed.
+        for i in range(0, nonzero_idx[0][0]):
+            smoothed.append(0)
+
+        # Interpolate between non-zero values.
+        interp = interp1d(nonzero_idx[0], nonzero_vals)
+        smoothed += [interp(x) for x in range(nonzero_idx[0][0], nonzero_idx[0][-1] + 1)]
+
+        # Pad end with zeros as needed.
+        for i in range(nonzero_idx[0][-1], len(first_derivatives)):
+            smoothed.append(0)
+
+        from matplotlib import pyplot
+        pyplot.plot(first_derivatives)
+        pyplot.plot(smoothed)
+        pyplot.show()
+
+        self.curvatures = smoothed
+
+    def compute_thicknesses(self, surface, thickness_parameters):
+        thicknesses = []
+        for i, point in enumerate(self.points):
+            constant_component = thickness_parameters.const
+            surface_data = surface.at_point(point[0], point[1])
+            z_component = (1 - surface_data.z) * thickness_parameters.z
+            diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
+            try:
+                curvature_component = self.curvatures[i] * thickness_parameters.curvature
+            except IndexError:
+                curvature_component = 0
+
+            thickness = constant_component + z_component + diffdir_component + curvature_component
+            thicknesses.append(thickness)
+
+        self.thicknesses = thicknesses
 
 
 class Curve1D:
@@ -173,6 +244,7 @@ class Curve1D:
         self.__generate()
 
     def __path_fit(self, path, optimisation_factor, fit_error):
+        logger.debug("Starting path fit...")
         path = measure.approximate_polygon(np.array(path.points), optimisation_factor)
 
         self.d = pf.pathtosvg((pf.fitpath(path, fit_error)))
@@ -181,15 +253,19 @@ class Curve1D:
         curve_start_index = self.d.index("C")
         self.d_m = self.d[0:curve_start_index - 1]
         self.d_c = self.d[curve_start_index:]
+        logger.debug("Path fit complete...")
 
     def __generate(self):
         self.__path_fit(path=self.path, optimisation_factor=self.optimisation_factor, fit_error=self.fit_error)
 
     def offset(self, interval, positive_direction=True):
+        logger.debug("Starting offset...")
         for i, segment in enumerate(svgp.parse_path(self.d)):
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
             t_step = interval / segment.length()
+            logger.debug("Segment length: %f", segment.length())
+            logger.debug("T Step: %f", t_step)
 
             # Generate a list of parameter values. To avoid duplicate construction Points between segments, ensure the
             # endpoint of a segment (t = 1) is captured only if processing the final segment of the overall
@@ -199,6 +275,7 @@ class Curve1D:
                 t = np.append(t, 1)
 
             for step in t:
+                logger.debug("Step: %f", step)
                 # Extract the coordinates at this t-step.
                 interval_point = [segment.point(step).real, segment.point(step).imag]
                 self.interval_points.append(interval_point)
@@ -229,16 +306,18 @@ class Curve1D:
         self.__path_fit(path=Path(self.offset_points), optimisation_factor=self.optimisation_factor,
                         fit_error=self.fit_error)
 
+        logger.debug("Offset complete.")
+
 
 class Stroke:
     def __init__(self, upper_curve, lower_curve):
-        super().__init__()
         self.upper_curve = upper_curve
         self.lower_curve = lower_curve
 
         self.__generate()
 
     def __generate(self):
+        logger.debug("Starting generate...")
         upper_curve = svgp.parse_path(self.upper_curve.d)
         upper_curve_start = (upper_curve.start.real,
                              upper_curve.start.imag)
@@ -277,9 +356,10 @@ class Stroke:
         p.tostring()
         self.d = p.attribs['d']
 
+        logger.debug("Generate complete.")
+
 
 if __name__ == "__main__":
-
     # print(spatial.distance.euclidean([1, 0], [2, 0]))
 
     fake_image = np.ones((100, 100))

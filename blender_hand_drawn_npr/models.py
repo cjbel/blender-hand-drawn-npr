@@ -14,16 +14,16 @@ class Surface:
         self.obj_image = obj_image
         self.z_image = z_image
         self.diffdir_image = diffdir_image
-        self.norm_image = norm_image
+        # self.norm_image = norm_image
         self.norm_x = None
         self.norm_y = None
         self.norm_z = None
         self.u_image = u_image
         self.v_image = v_image
-        self.u_curvature_image = None
-        self.v_curvature_image = None
+        # self.u_curvature_image = None
+        # self.v_curvature_image = None
 
-        self.SurfaceData = namedtuple("SurfaceData", "obj z diffdir norm norm_x norm_y norm_z u v u_curvature v_curvature")
+        self.SurfaceData = namedtuple("SurfaceData", "obj z diffdir norm_x norm_y norm_z u v")
 
     def init_obj_image(self, file_path):
         self.obj_image = io.imread(file_path, as_gray=True)
@@ -43,14 +43,14 @@ class Surface:
         # Original image will be mapped to non-linear colourspace. Correct the normals by adjusting this.
         norm_image = exposure.adjust_gamma(norm_image, 2.2)
 
-        # normal x values are encoded in red channel.
+        # Normal x values are encoded in red channel.
         self.norm_x = norm_image[:, :, 0]
-        # normal y values are encoded in green channel.
+        # Normal y values are encoded in green channel.
         self.norm_y = norm_image[:, :, 1]
-        # normal z values are encoded in blue channel.
+        # Normal z values are encoded in blue channel.
         self.norm_z = norm_image[:, :, 2]
 
-        self.norm_image = io.imread(file_path, as_gray=True)
+        # self.norm_image = io.imread(file_path, as_gray=True)
 
     def init_uv_image(self, file_path):
         # 16-bit colour-depth, use imageio.
@@ -65,8 +65,8 @@ class Surface:
 
         logger.info("UV image loaded: %s", file_path)
 
-        self.u_curvature_image = np.zeros_like(self.obj_image)
-        self.v_curvature_image = np.zeros_like(self.obj_image)
+        # self.u_curvature_image = np.zeros_like(self.obj_image)
+        # self.v_curvature_image = np.zeros_like(self.obj_image)
 
     def at_point(self, x, y):
         assert x >= 0
@@ -75,14 +75,12 @@ class Surface:
         surface_data = self.SurfaceData(obj=self.obj_image[y, x],
                                         z=self.z_image[y, x],
                                         diffdir=self.diffdir_image[y, x],
-                                        norm=self.norm_image[y, x],
+                                        # norm=self.norm_image[y, x],
                                         norm_x=self.norm_x[y, x],
                                         norm_y=self.norm_y[y, x],
                                         norm_z=self.norm_z[y, x],
                                         u=self.u_image[y, x],
-                                        v=self.v_image[y, x],
-                                        u_curvature=self.u_curvature_image[y, x],
-                                        v_curvature=self.u_curvature_image[y, x])
+                                        v=self.v_image[y, x])
         return surface_data
 
     def is_valid(self, point):

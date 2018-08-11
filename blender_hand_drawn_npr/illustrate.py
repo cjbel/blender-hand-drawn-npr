@@ -16,13 +16,14 @@ class Illustrator:
         self.img_dir = img_dir
         self.out_filename = out_filename
 
-        self.settings = Settings(rdp_epsilon=1,
-                                 curve_fit_error=0.1,
+        self.settings = Settings(rdp_epsilon=0.1,
+                                 curve_fit_error=0.01,
                                  harris_min_distance=50,
-                                 curve_sampling_interval=2,
+                                 curve_sampling_interval=100,
                                  thickness_model=None,
                                  stroke_colour="black",
-                                 streamline_segments=2)
+                                 streamline_segments=5,
+                                 thickness_parameters=None)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -36,16 +37,16 @@ class Illustrator:
         self.illustration = svgwrite.Drawing(os.path.join(self.img_dir, self.out_filename), illustration_dimensions)
 
     def illustrate(self):
-        silhouette = Silhouette(surface=self.surface, settings=self.settings)
-        silhouette.generate()
-        [self.illustration.add(svg_stroke) for svg_stroke in silhouette.svg_strokes]
+        # silhouette = Silhouette(surface=self.surface, settings=self.settings)
+        # silhouette.generate()
+        # [self.illustration.add(svg_stroke) for svg_stroke in silhouette.svg_strokes]
 
         streamlines = Streamlines(surface=self.surface, settings=self.settings)
         streamlines.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
 
-        from skimage import io
-        io.imsave("/tmp/curvature.png", self.surface.u_curvature_image)
+        # from skimage import io
+        # io.imsave("/tmp/curvature.png", self.surface.u_curvature_image)
 
     def save(self):
         self.illustration.save()
@@ -55,7 +56,9 @@ class Illustrator:
 
 if __name__ == "__main__":
     illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/sphere", "Illustration.svg")
     # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
     # illustrator = Illustrator("/tmp/surface_1D_curvature", "Illustration.svg")
+    illustrator.illustrate()
     illustrator.illustrate()
     illustrator.save()
