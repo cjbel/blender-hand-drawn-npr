@@ -3,21 +3,33 @@ import logging
 import svgwrite
 from skimage import measure
 
-from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
+from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke, Settings
 
 logger = logging.getLogger(__name__)
 
 
+def create_stroke(path, settings):
+    upper_curve = Curve1D(path=path,
+                          optimisation_factor=settings.rdp_epsilon, fit_error=settings.curve_fit_error)
+    upper_curve.offset(interval=settings.curve_sampling_interval)
+
+    lower_curve = Curve1D(path=path,
+                          optimisation_factor=settings.rdp_epsilon, fit_error=settings.curve_fit_error)
+    lower_curve.offset(interval=settings.curve_sampling_interval, positive_direction=False)
+
+    return Stroke(upper_curve=upper_curve, lower_curve=lower_curve)
+
+
 class Silhouette:
     """
-    A Silhouette is a collection of Paths which capture the silhouette of the render subject.
+    A Silhouette is a collection of Strokes which capture the silhouette of the render subject.
     """
 
-    def __init__(self, surface, colour):
-        self.paths = []
+    def __init__(self, surface, settings):
         self.surface = surface
-        self.colour = colour
-        self.strokes = []
+        self.settings = settings
+        self.paths = []
+        self.svg_strokes = []
 
     def generate(self):
         """
@@ -38,7 +50,7 @@ class Silhouette:
         path = Path([[coord[1], coord[0]] for coord in contours])
 
         # Initial Path must be split into multiple Paths if corners are present.
-        if path.find_corners(self.surface.obj_image, 50, 13):
+        if path.find_corners(self.surface.obj_image, self.settings.harris_min_distance, None):
             self.paths += path.split_corners()
         else:
             self.paths.append(path)
@@ -46,30 +58,181 @@ class Silhouette:
         logger.info("Silhouette Paths found: %d", len(self.paths))
 
         for path in self.paths:
-            path.validate(self.surface)
+            path.bump(self.surface)
+            path.compute_thicknesses(self.surface)
 
-            interval = 5
-            optimisation_factor = 1
-            fit_error = 0.1
+            stroke = create_stroke(path=path, settings=self.settings)
 
-            upper_curve = Curve1D(path=path,
-                                  optimisation_factor=optimisation_factor, fit_error=fit_error)
-            upper_curve.offset(interval=interval, surface=self.surface,
-                               thickness_model=None)
-
-            lower_curve = Curve1D(path=path,
-                                  optimisation_factor=optimisation_factor, fit_error=fit_error)
-            lower_curve.offset(interval=interval, surface=self.surface,
-                               thickness_model=None, positive_direction=False)
-
-            stroke = Stroke(upper_curve=upper_curve, lower_curve=lower_curve)
-
-            svg_stroke = svgwrite.path.Path(fill=self.colour, stroke_width=0)
+            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stroke.d)
 
-            self.strokes.append(svg_stroke)
+            self.svg_strokes.append(svg_stroke)
 
-        logger.info("Silhouette Strokes prepared: %d", len(self.strokes))
+        logger.info("Silhouette Strokes prepared: %d", len(self.svg_strokes))
+
+
+class Streamlines:
+    """
+    Streamlines are a collection of SVG Streamline strokes.
+    """
+
+    def __init__(self, surface, settings):
+        self.settings = settings
+        self.surface = surface
+        self.svg_strokes = []
+
+    def generate(self):
+        u_image = self.surface.u_image
+        v_image = self.surface.v_image
+        n = self.settings.streamline_segments
+
+        u_separation, v_separation = (u_image.max() - u_image.min()) / n, \
+                                     (v_image.max() - v_image.min()) / n
+        logger.debug("Streamline separation (u, v): %s, %s", u_separation, v_separation)
+
+        u_intensities = []
+        for streamline_pos in range(1, n):
+            u_intensities.append(streamline_pos * u_separation)
+        logger.debug("Intensities (u): %s", u_intensities)
+
+        v_intensities = []
+        for streamline_pos in range(1, n):
+            v_intensities.append(streamline_pos * v_separation)
+        logger.debug("Intensities (v): %s", v_intensities)
+
+        strokes = []
+        for intensity in u_intensities:
+            u_streamline = Streamline(image=u_image,
+                                      surface=self.surface,
+                                      intensity=intensity,
+                                      settings=self.settings)
+            u_streamline.generate()
+            strokes += u_streamline.strokes
+
+        for intensity in v_intensities:
+            v_streamline = Streamline(image=v_image,
+                                      surface=self.surface,
+                                      intensity=intensity,
+                                      settings=self.settings)
+            v_streamline.generate()
+            strokes += v_streamline.strokes
+
+        for stroke in strokes:
+            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+            svg_stroke.push(stroke.d)
+
+            self.svg_strokes.append(svg_stroke)
+
+        logger.info("Streamline Strokes prepared: %d", len(self.svg_strokes))
+
+
+class Streamline:
+    """
+    A Streamline is a collection of Strokes which follow a specified UV intensity value.
+    """
+
+    def __init__(self, image, surface, intensity, settings):
+        self.primary_image = image
+        self.surface = surface
+        self.intensity = intensity
+        self.settings = settings
+        self.paths = []
+        self.strokes = []
+
+    def generate(self):
+        contours = measure.find_contours(self.primary_image, self.intensity)
+        logger.debug("Streamline contours found: %d", len(contours))
+
+        for contour in contours:
+            # Sometimes a contour of small length (~5-10 is found, consider a check here to reject them.
+            if len(contour) < 10:
+                logger.debug("Contour of length %s rejected.", len(contour))
+                break
+
+            # Create the Path.
+            path = Path([[coord[1], coord[0]] for coord in contour])
+            path.bump(self.surface)
+            path.trim_uv(self.intensity, self.primary_image)
+            path.compute_thicknesses(self.surface)
+            # self.surface.compute_curvature(path, self.primary_image)
+
+            # threshold = 0.0005
+            # first_derivatives = []
+            # for i in range(0, len(path.points) - 1):
+            #     cur = self.surface.at_point(path.points[i][0], path.points[i][1]).norm
+            #     next = self.surface.at_point(path.points[i + 1][0], path.points[i + 1][1]).norm
+            #
+            #     delta = abs(cur - next)
+            #     if delta > threshold:
+            #         first_derivatives.append(delta)
+            #     else:
+            #         first_derivatives.append(0)
+            #
+            # # def compute_thing(list):
+            # #     indices = []
+            # #     for i, element in enumerate(list):
+            # #         if element > 0:
+            # #             indices.append(i)
+            # #     print(indices)
+            # #
+            # #     distances = []
+            # #     for i in range(0, len(indices) - 1):
+            # #         distance = indices[i + 1] - indices[i]
+            # #         distances.append(distance)
+            # #
+            # #     from statistics import mode, mean, median
+            # #
+            # #     buffer_factor = 1.5
+            # #
+            # #     return int(round(mode(distances) * buffer_factor))
+            #
+            # def interpolate(vals):
+            #     import numpy as np
+            #     from scipy.interpolate import interp1d
+            #
+            #     vals = np.array(vals)
+            #     nonzero_idx = np.nonzero(vals)
+            #     nonzero_vals = vals[nonzero_idx]
+            #
+            #     out = []
+            #     # Pad start with zeros as needed.
+            #     for i in range(0, nonzero_idx[0][0]):
+            #         out.append(0)
+            #
+            #     interp = interp1d(nonzero_idx[0], nonzero_vals)
+            #     out += [interp(x) for x in range(nonzero_idx[0][0], nonzero_idx[0][-1] + 1)]
+            #
+            #     # Pad end with zeros as needed.
+            #     for i in range(nonzero_idx[0][-1], len(vals)):
+            #         out.append(0)
+            #
+            #     return out
+            #
+            # first_derivatives_new = interpolate(first_derivatives)
+            #
+            # from matplotlib import pyplot
+            # import numpy as np
+            # pyplot.plot(first_derivatives)
+            # pyplot.plot(first_derivatives_new)
+            # pyplot.show()
+            #
+            # self.paths.append(path)  # For viz only.
+            # print(len(path.points))
+            # print(len(first_derivatives_new))
+
+            stroke = create_stroke(path=path, settings=self.settings)
+            self.strokes.append(stroke)
+
+        # import numpy as np
+        # import matplotlib.pyplot as plt
+        # conts = [np.array(path.points)]
+        # # Display the image and plot all contours found
+        # fig, ax = plt.subplots()
+        # ax.imshow(self.primary_image, interpolation='nearest', cmap=plt.cm.gray)
+        #
+        # for cont in conts:
+        #     ax.plot(cont[:, 1], cont[:, 0], linewidth=2)
+        # plt.show()
 
 
 if __name__ == "__main__":

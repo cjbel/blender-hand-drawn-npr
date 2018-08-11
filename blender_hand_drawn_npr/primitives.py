@@ -1,5 +1,5 @@
 import logging
-from collections import deque
+from collections import deque, namedtuple
 
 import numpy as np
 import svgpathtools as svgp
@@ -13,24 +13,26 @@ from blender_hand_drawn_npr.models import Surface
 
 logger = logging.getLogger(__name__)
 
+Settings = namedtuple("Settings", ["rdp_epsilon",
+                                   "curve_fit_error",
+                                   "harris_min_distance",
+                                   "curve_sampling_interval",
+                                   "thickness_model",
+                                   "stroke_colour",
+                                   "streamline_segments"])
+
 
 class Path:
 
     def __init__(self, points):
         self.points = points
+        self.thicknesses = []
         self.corners = []
 
-    def __round(self):
+    def round(self):
         self.points = [[int(round(point[0])), int(round(point[1]))] for point in self.points]
 
-    def __is_valid(self, point, surface):
-        surface_data = surface.at_point(point[0], point[1])
-        is_valid = surface_data.obj != 0
-        return is_valid
-
     def nearest_neighbour(self, target_point):
-
-        # TODO: Needs tested, don't think this is working.
 
         distance_map = {}
 
@@ -54,14 +56,17 @@ class Path:
         # Locate corners, returned values are row/col coordinates (rcs).
         corner_rcs = corner_peaks(corner_harris(image), min_distance)
 
-        if corner_rcs.any():
-            # Locate a more accurate subpixel location of the corners.
-            subpix_rcs = corner_subpix(image, corner_rcs, window_size)
-
-            # Locate the nearest existing point closest to each subpixel location.
-            for rc in subpix_rcs:
-                corner = self.nearest_neighbour((rc[1], rc[0]))
-                self.corners.append(corner)
+        # if corner_rcs.any():
+            # # Locate a more accurate subpixel location of the corners.
+            # subpix_rcs = corner_subpix(image, corner_rcs, window_size)
+            #
+            # # Locate the nearest existing point closest to each subpixel location.
+            # for rc in subpix_rcs:
+            #     corner = self.nearest_neighbour((rc[1], rc[0]))
+            #     self.corners.append(corner)
+        for corner_rc in corner_rcs:
+            corner = self.nearest_neighbour((corner_rc[1], corner_rc[0]))
+            self.corners.append(corner)
 
         return self.corners
 
@@ -93,7 +98,7 @@ class Path:
 
         return paths
 
-    def validate(self, surface):
+    def bump(self, surface):
         """
         In a meaningful path, all points lie on the surface such that the underlying surface attributes can be queried.
         If the Path has been generated based on find_contours, it is possible that inaccuracies can place the location
@@ -101,11 +106,15 @@ class Path:
 
         :return:
         """
-        self.__round()
+
+        self.round()
 
         for i, point in enumerate(self.points):
 
-            if not self.__is_valid(point, surface):
+            if surface.is_valid(point):
+                continue
+
+            else:
                 # Need to find another pixel nearby which passes the test. Due to the nature of rounding, a pixel with
                 # valid attributes will be found within 1 pixel of the original. So first, identify translations
                 # required to shift pixel position by 1 pixel in each direction.
@@ -115,20 +124,37 @@ class Path:
                                       [0, -1]]  # y-
 
                 # Now evaluate the attributes of each neighbour.
-                for pixel_translation in pixel_translations:
+                for i, pixel_translation in enumerate(pixel_translations):
                     candidate_point = [point[0] + pixel_translation[0],
                                        point[1] + pixel_translation[1]]
 
                     try:
-                        if self.__is_valid(candidate_point, surface):
+                        if surface.is_valid(candidate_point):
                             logger.debug("Invalid: %s replaced with: %s", point, candidate_point)
                             self.points[i] = candidate_point
                             break
+                        elif i == len(pixel_translations) - 1:
+                            # Final loop iteration failed to find a match.
+                            logger.warning("A valid point could not be found!")
 
                     except AssertionError:
                         logger.debug("Candidate point out of allowable range: %s", candidate_point)
 
-                logger.warning("A valid point could not be found!")
+    def trim_uv(self, target_intensity, primary_image):
+
+        allowable_deviance = 100
+
+        min_allowable = target_intensity - allowable_deviance
+        max_allowable = target_intensity + allowable_deviance
+
+        valid_points = []
+        for point in self.points:
+            if min_allowable <= primary_image[point[1], point[0]] <= max_allowable:
+                valid_points.append([point[0], point[1]])
+        self.points = valid_points
+
+    def compute_thicknesses(self, surface):
+        self.thicknesses = [2] * len(self.points)
 
 
 class Curve1D:
@@ -159,7 +185,7 @@ class Curve1D:
     def __generate(self):
         self.__path_fit(path=self.path, optimisation_factor=self.optimisation_factor, fit_error=self.fit_error)
 
-    def offset(self, interval, surface, thickness_model, positive_direction=True):
+    def offset(self, interval, positive_direction=True):
         for i, segment in enumerate(svgp.parse_path(self.d)):
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
@@ -180,11 +206,8 @@ class Curve1D:
                 # neighbour to get valid surface attributes, but keep the point coordinates.
                 # TODO: Shouldnt there be a validity check before calling this to avoid unnecessary calls?
                 surface_point = self.path.nearest_neighbour(interval_point)
-                surface_data = surface.at_point(surface_point[0], surface_point[1])
-
-                # TODO: Think now about how to pass thickness requirements into here.
-                # thickness = ((1 - surface_data.z) * 4) + 0.2
-                thickness = 4
+                surface_idx = self.path.points.index(surface_point)
+                thickness = self.path.thicknesses[surface_idx]
 
                 # Compute offset coordinates for each side (a and b) of the t-step.
                 normal = segment.normal(step)
@@ -269,7 +292,7 @@ if __name__ == "__main__":
                       v_image=fake_image)
 
     path = Path([[50, 20], [20, 50], [50, 80]])
-    path.validate(surface)
+    path.bump(surface)
 
     upper_curve = Curve1D(path=path, optimisation_factor=1, fit_error=0.1)
     upper_curve.offset(interval=2, surface=surface, thickness_model=None)

@@ -48,7 +48,7 @@ class Silhouette:
         logger.info("Paths found: %d", len(self.paths))
 
         for path in self.paths:
-            path.validate(self.surface)
+            path.bump(self.surface)
             path.optimise()
             stroke = Stroke(path, self.surface)
             stroke.generate_svg_path()
