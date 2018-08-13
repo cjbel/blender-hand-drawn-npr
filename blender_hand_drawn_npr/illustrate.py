@@ -16,15 +16,41 @@ class Illustrator:
         self.img_dir = img_dir
         self.out_filename = out_filename
 
-        self.settings = Settings(rdp_epsilon=1,
-                                 curve_fit_error=0.001,
-                                 harris_min_distance=50,
-                                 subpix_window_size=13,
+        # Flat. Issue with corner detection on far end.
+        self.settings = Settings(rdp_epsilon=50,
+                                 curve_fit_error=0.01,
+                                 harris_min_distance=40,
+                                 subpix_window_size=20,
                                  curve_sampling_interval=50,
                                  thickness_model=None,
                                  stroke_colour="black",
-                                 streamline_segments=4,
-                                 thickness_parameters=None)
+                                 streamline_segments=16,
+                                 thickness_parameters=None,
+                                 uv_allowable_deviance=30)
+
+        # Bump.
+        self.settings = Settings(rdp_epsilon=50,
+                                 curve_fit_error=0.01,
+                                 harris_min_distance=100,
+                                 subpix_window_size=50,
+                                 curve_sampling_interval=50,
+                                 thickness_model=None,
+                                 stroke_colour="black",
+                                 streamline_segments=16,
+                                 thickness_parameters=None,
+                                 uv_allowable_deviance=30)
+
+        # Undulating plane.
+        # self.settings = Settings(rdp_epsilon=10,
+        #                          curve_fit_error=0.001,
+        #                          harris_min_distance=40,
+        #                          subpix_window_size=20,
+        #                          curve_sampling_interval=10,
+        #                          thickness_model=None,
+        #                          stroke_colour="black",
+        #                          streamline_segments=14,
+        #                          thickness_parameters=None,
+        #                          uv_allowable_deviance=30)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -57,8 +83,8 @@ class Illustrator:
 
 if __name__ == "__main__":
     # illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/bump", "Illustration.svg")
-    illustrator = Illustrator("/tmp/flat", "Illustration.svg")
+    illustrator = Illustrator("/tmp/bump", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/flat", "Illustration.svg")
     # illustrator = Illustrator("/tmp/sphere", "Illustration.svg")
     # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
     # illustrator = Illustrator("/tmp/surface_1D_curvature", "Illustration.svg")

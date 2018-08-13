@@ -23,7 +23,8 @@ Settings = namedtuple("Settings", ["rdp_epsilon",
                                    "thickness_model",
                                    "stroke_colour",
                                    "streamline_segments",
-                                   "thickness_parameters"])
+                                   "thickness_parameters",
+                                   "uv_allowable_deviance"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -150,9 +151,7 @@ class Path:
                     except AssertionError:
                         logger.debug("Candidate point out of allowable range: %s", candidate_point)
 
-    def trim_uv(self, target_intensity, primary_image):
-
-        allowable_deviance = 30
+    def trim_uv(self, target_intensity, primary_image, allowable_deviance):
 
         min_allowable = target_intensity - allowable_deviance
         max_allowable = target_intensity + allowable_deviance
@@ -228,6 +227,9 @@ class Path:
 
         self.thicknesses = thicknesses
 
+    def simple_cull(self, factor):
+        pass
+
 
 class Curve1D:
     def __init__(self, path, optimisation_factor, fit_error):
@@ -250,12 +252,20 @@ class Curve1D:
 
         if optimise:
             assert optimisation_factor is not None
-            path = measure.approximate_polygon(np.array(path.points), optimisation_factor)
-            self.optimised_path = Path(path.tolist())
-        else:
-            path = np.array(path.points)
+            points = self.path.points
+            keep = []
+            for i in range(0, len(points) - 1):
+                if i % optimisation_factor == 0:
+                    keep.append(points[i])
+            keep.append(points[-1])
 
-        self.d = pf.pathtosvg((pf.fitpath(path, fit_error)))
+            points = measure.approximate_polygon(np.array(keep), 0.8)
+            self.optimised_path = Path(points.tolist())
+
+        else:
+            points = np.array(path.points)
+
+        self.d = pf.pathtosvg((pf.fitpath(points, fit_error)))
 
         # Split the initial move-to from the remainder of the string.
         curve_start_index = self.d.index("C")
@@ -283,9 +293,6 @@ class Curve1D:
             logger.debug("T list: %s", t)
             if i == len(svgp.parse_path(self.d)) - 1 and (1 not in t):
                 t = np.append(t, 1)
-
-            # t_step = segment.length() / 3
-            # t = arange(0, 1, t_step)
 
             for step in t:
                 logger.debug("Step: %f", step)
