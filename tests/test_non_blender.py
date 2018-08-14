@@ -1,9 +1,10 @@
 import unittest
+
 import numpy as np
 from skimage import draw
 
-from blender_hand_drawn_npr.primitives import Path
 from blender_hand_drawn_npr.models import Surface
+from blender_hand_drawn_npr.primitives import Path
 
 
 class TestPath(unittest.TestCase):
@@ -18,7 +19,9 @@ class TestPath(unittest.TestCase):
         self.surface = Surface(obj_image=fake_image,
                                z_image=fake_image,
                                diffdir_image=fake_image,
-                               norm_image=fake_image,
+                               norm_x_image=fake_image,
+                               norm_y_image=fake_image,
+                               norm_z_image=fake_image,
                                u_image=fake_image,
                                v_image=fake_image)
 
@@ -38,42 +41,66 @@ class TestPath(unittest.TestCase):
         path = Path([[0, 0],
                      [0.1, 0.8],
                      [10.8, 10.1]])
-        path.round()
+        rounded = path.round()
 
-        self.assertEqual([[0, 0],
-                          [0, 1],
-                          [11, 10]], path.points)
+        self.assertEqual(((0, 0),
+                          (0, 1),
+                          (11, 10)), rounded.points)
 
     def test_nearest_neighbour(self):
-        self.assertEqual([2, 2], self.edge_path.nearest_neighbour([0, 0]))
-        self.assertEqual([7, 2], self.edge_path.nearest_neighbour([9, 0]))
-        self.assertEqual([7, 7], self.edge_path.nearest_neighbour([9, 9]))
-        self.assertEqual([2, 7], self.edge_path.nearest_neighbour([0, 9]))
+        self.assertEqual((2, 2), self.edge_path.nearest_neighbour([0, 0]))
+        self.assertEqual((7, 2), self.edge_path.nearest_neighbour([9, 0]))
+        self.assertEqual((7, 7), self.edge_path.nearest_neighbour([9, 9]))
+        self.assertEqual((2, 7), self.edge_path.nearest_neighbour([0, 9]))
 
     def test_find_corners(self):
-        self.edge_path.find_corners(self.surface.obj_image,
-                                    min_distance=1,
-                                    window_size=1)
+        corners = self.edge_path.find_corners(self.surface.obj_image,
+                                              min_distance=1,
+                                              window_size=1)
 
-        self.assertTrue([2, 2] in self.edge_path.corners)
-        self.assertTrue([2, 7] in self.edge_path.corners)
-        self.assertTrue([7, 7] in self.edge_path.corners)
-        self.assertTrue([7, 2] in self.edge_path.corners)
+        self.assertTrue((2, 2) in corners)
+        self.assertTrue((2, 7) in corners)
+        self.assertTrue((7, 7) in corners)
+        self.assertTrue((7, 2) in corners)
 
     def test_split_corners(self):
-        self.edge_path.corners = [[2, 2], [2, 7], [7, 7], [7, 2]]
+        corners = ((2, 2), (2, 7), (7, 7), (7, 2))
 
-        paths = self.edge_path.split_corners()
+        paths = self.edge_path.split_corners(corners)
         points = [path.points for path in paths]
 
         self.assertEqual(4, len(paths))
-        self.assertTrue([[2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2]] in points)
-        self.assertTrue([[7, 2], [7, 3], [7, 4], [7, 5], [7, 6], [7, 7]] in points)
-        self.assertTrue([[7, 7], [6, 7], [5, 7], [4, 7], [3, 7], [2, 7]] in points)
-        self.assertTrue([[2, 7], [2, 6], [2, 5], [2, 4], [2, 3]] in points)
+        self.assertTrue(((2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (7, 2)) in points)
+        self.assertTrue(((7, 2), (7, 3), (7, 4), (7, 5), (7, 6), (7, 7)) in points)
+        self.assertTrue(((7, 7), (6, 7), (5, 7), (4, 7), (3, 7), (2, 7)) in points)
+        self.assertTrue(((2, 7), (2, 6), (2, 5), (2, 4), (2, 3)) in points)
 
-    def test_validate(self):
-        self.boundary_path.bump(self.surface)
+    def test_bump(self):
+        bumped = self.boundary_path.bump(self.surface)
+
+        self.assertEqual(((2, 2), (2, 2), (3, 2), (4, 2), (5, 2), (6, 2), (7, 2), (7, 2), (7, 2), (7, 3),
+                          (7, 4), (7, 5), (7, 6), (7, 7), (7, 7), (7, 7), (6, 7), (5, 7), (4, 7), (3, 7),
+                          (2, 7), (2, 7), (2, 7), (2, 6), (2, 5), (2, 4), (2, 3), (2, 2)),
+                         bumped.points)
+
+    def test_trim_uv(self):
+        # Create a fake UV map, gradient image with a black border and a rouge pixel on the isoline, which will force
+        # a path split.
+        x = np.linspace(0, 1, 10)
+        image = np.tile(x, (10, 1))
+        boundary = draw.polygon_perimeter((0, 0, 9, 9), (0, 9, 9, 0))
+        image[boundary] = 0
+        image[4, 4] = 0.55
+
+        from skimage import measure
+        contours = measure.find_contours(image, 0.444)
+        uv_path = Path(contours[0].tolist(), is_rc=True).round()
+
+        trimmed_paths = uv_path.trim_uv(image=image, target_intensity=0.4, allowable_deviance=0.1)
+
+        # Expected results are two paths as follows.
+        self.assertEqual(((4, 8), (4, 8), (4, 7), (4, 6), (4, 5)), trimmed_paths[0].points)
+        self.assertEqual(((4, 3), (4, 2), (4, 1), (4, 1)), trimmed_paths[1].points)
 
 
 class TestStroke(unittest.TestCase):

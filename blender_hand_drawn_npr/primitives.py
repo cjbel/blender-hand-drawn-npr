@@ -5,9 +5,9 @@ from collections import deque, namedtuple
 import numpy as np
 import svgpathtools as svgp
 import svgwrite
+from more_itertools import unique_everseen
 from scipy import arange, spatial
 from scipy.interpolate import interp1d
-from skimage import measure
 from skimage.feature import corner_harris, corner_peaks, corner_subpix
 
 import blender_hand_drawn_npr.PathFitter as pf
@@ -20,7 +20,6 @@ Settings = namedtuple("Settings", ["rdp_epsilon",
                                    "harris_min_distance",
                                    "subpix_window_size",
                                    "curve_sampling_interval",
-                                   "thickness_model",
                                    "stroke_colour",
                                    "streamline_segments",
                                    "thickness_parameters",
@@ -33,67 +32,87 @@ ThicknessParameters = namedtuple("ThicknessParameters", ["const",
 
 
 class Path:
+    """
+    A Path represents an immutable, ordered collection of image-space pixel coordinates ("points").
+    """
 
-    def __init__(self, points):
-        self.points = points
-        self.thicknesses = []
-        self.curvatures = []
-        self.corners = []
+    def __init__(self, points, is_rc=False):
+
+        # Points are represented internally as a tuple of (x, y) coordinates.
+        if not is_rc:
+            # Input coordinate are already given in terms of (x, y).
+            self.__points = tuple(tuple(point) for point in points)
+        else:
+            # Input coordinates are given in terms of (row, column), so swap to (x, y).
+            self.__points = tuple((point[1], point[0]) for point in points)
+
+    @property
+    def points(self):
+        return self.__points
+
+    @property
+    def points_as_rc(self):
+        return tuple(((point[1], point[0]) for point in self.__points))
+
+    def __iter__(self):
+        return iter(self.__points)
 
     def round(self):
-        self.points = [[int(round(point[0])), int(round(point[1]))] for point in self.points]
+        """
+        :return: New Path object containing rounded points.
+        """
+        return Path(((int(round(point[0])), int(round(point[1]))) for point in self.__points))
 
     def nearest_neighbour(self, target_point):
-
+        """
+        :param target_point:
+        :return: Point on the current Path which is nearest to the specified target_point in Euclidean space.
+        """
         distance_map = {}
 
-        for i, path_point in enumerate(self.points):
+        for i, path_point in enumerate(self.__points):
             distance_map[i] = spatial.distance.euclidean(path_point, target_point)
 
         min_loc = min(distance_map, key=distance_map.get)
 
-        return self.points[min_loc]
+        return self.__points[min_loc]
 
     def find_corners(self, image, min_distance, window_size):
         """
-        Locate points which exist on the corners of the specified image.
-
         :param image:
         :param min_distance:
         :param window_size:
-        :return:
+        :return: Points identified as corners.
         """
 
         # Locate corners, returned values are row/col coordinates (rcs).
         corner_rcs = corner_peaks(corner_harris(image), min_distance)
+        subpix_rcs = corner_subpix(image=image, corners=corner_rcs, window_size=window_size)
 
-        if corner_rcs.any():
-        # Locate a more accurate subpixel location of the corners.
-            subpix_rcs = corner_subpix(image, corner_rcs, window_size)
+        corners = []
+        for i, subpix_rc in enumerate(subpix_rcs):
+            if np.isnan(subpix_rc).any():
+                corners.append(tuple(corner_rcs[i].tolist()))
+            else:
+                corners.append(tuple(subpix_rc.tolist()))
 
-            # Locate the nearest existing point closest to each subpixel location.
-            for rc in subpix_rcs:
-                corner = self.nearest_neighbour((rc[1], rc[0]))
-                self.corners.append(corner)
-        # for corner_rc in corner_rcs:
-        #     corner = self.nearest_neighbour((corner_rc[1], corner_rc[0]))
-        #     self.corners.append(corner)
+        return tuple(corners)
 
-        return self.corners
-
-    def split_corners(self):
-        # Split self into multiple new Path objects for each edge.
-
+    def split_corners(self, corners):
+        """
+        :param corners:
+        :return: New Path objects, each representing a distinct edge.
+        """
         # Identify the index of each corner in this Path.
         corner_indices = []
-        for corner in self.corners:
-            corner_indices.append(self.points.index(corner))
+        for corner in corners:
+            corner_indices.append(self.__points.index(corner))
         corner_indices.sort()
 
         # Rebase the list of points to ensure the first point in the list is a corner.
         rebase_value = corner_indices[0]
         rebased_indices = [x - rebase_value for x in corner_indices]
-        rebased_points = deque(self.points)
+        rebased_points = deque(self.__points)
         rebased_points.rotate(-rebase_value)
         rebased_points = list(rebased_points)
 
@@ -107,7 +126,7 @@ class Path:
                 points = rebased_points[rebased_indices[i]:]
                 paths.append(Path(points))
 
-        return paths
+        return tuple(paths)
 
     def bump(self, surface):
         """
@@ -115,66 +134,107 @@ class Path:
         If the Path has been generated based on find_contours, it is possible that inaccuracies can place the location
         slightly off the surface.
 
-        :return:
+        :return: Path with points adjusted to valid surface locations in image-space.
         """
 
-        self.round()
+        points = list(self.__points)
 
-        for i, point in enumerate(self.points):
+        for i, point in enumerate(points):
 
             if surface.is_valid(point):
                 continue
 
             else:
-                # Need to find another pixel nearby which passes the test. Due to the nature of rounding, a pixel with
-                # valid attributes will be found within 1 pixel of the original. So first, identify translations
+                # Need to find another pixel nearby which is valid. Due to the nature of find_contours, a pixel
+                # with valid attributes will be found within 1 pixel of the original. So first, identify translations
                 # required to shift pixel position by 1 pixel in each direction.
-                pixel_translations = [[1, 0],  # x+
-                                      [0, 1],  # y+
-                                      [-1, 0],  # x-
-                                      [0, -1]]  # y-
+                pixel_translations = [[0, -1],  # N
+                                      [0, 1],  # S
+                                      [1, 0],  # E
+                                      [-1, 0],  # W
+                                      [1, -1],  # NE
+                                      [1, 1],  # SE
+                                      [-1, 1],  # SW
+                                      [-1, -1]]  # NW
 
-                # Now evaluate the attributes of each neighbour.
-                for i, pixel_translation in enumerate(pixel_translations):
-                    candidate_point = [point[0] + pixel_translation[0],
-                                       point[1] + pixel_translation[1]]
+                # Now evaluate the surface attributes of each neighbour.
+                for j, pixel_translation in enumerate(pixel_translations):
+                    candidate_point = (point[0] + pixel_translation[0],
+                                       point[1] + pixel_translation[1])
 
                     try:
                         if surface.is_valid(candidate_point):
+                            points[i] = candidate_point
                             # logger.debug("Invalid: %s replaced with: %s", point, candidate_point)
-                            self.points[i] = candidate_point
                             break
-                        elif i == len(pixel_translations) - 1:
+                        elif j == len(pixel_translations) - 1:
                             # Final loop iteration failed to find a match.
                             logger.warning("A valid point could not be found!")
 
                     except AssertionError:
-                        logger.debug("Candidate point out of allowable range: %s", candidate_point)
+                        logger.warning("Candidate point out of allowable range: %s", candidate_point)
 
-    def trim_uv(self, target_intensity, primary_image, allowable_deviance):
+        return Path(points)
+
+    def remove_dupes(self):
+        """
+        :return: Path containing only unique points.
+        """
+        points = list(self.__points)
+        unique = tuple(unique_everseen(points))
+
+        return Path(unique)
+
+    def simple_cull(self, n):
+        points = self.path.points
+        keep = []
+        for i in range(0, len(points) - 1):
+            if i % optimisation_factor == 0:
+                keep.append(points[i])
+        keep.append(points[-1])
+
+    def trim_uv(self, target_intensity, image, allowable_deviance):
+
+        points = list(self.__points)
 
         min_allowable = target_intensity - allowable_deviance
         max_allowable = target_intensity + allowable_deviance
 
-        valid_points = []
-        for point in self.points:
-            if min_allowable <= primary_image[point[1], point[0]] <= max_allowable:
-                valid_points.append([point[0], point[1]])
+        last_was_accepted = None
+        paths = []
+        continuous_points = []
+        for point in points:
+            if min_allowable <= image[point[1], point[0]] <= max_allowable:
+                # Accept the point.
+                continuous_points.append(point)
+                last_was_accepted = True
+            else:
+                # Reject the point.
+                if last_was_accepted:
+                    # Create a Path from previously encountered continuous points.
+                    paths.append(Path(continuous_points))
+                    continuous_points.clear()
+                    last_was_accepted = False
 
-        logger.debug("Valid points after UV trim: %d", len(valid_points))
-        self.points = valid_points
+        # Create a Path from remaining points.
+        if continuous_points:
+            paths.append(Path(continuous_points))
+
+        logger.debug("Paths after UV trim: %d", len(paths))
+
+        return paths
 
     def compute_curvatures(self, primary_image, surface):
 
         # Compute first derivatives of planar magnitudes.
         first_derivatives = []
-        for i in range(0, len(self.points) - 1):
-            cur_dim = primary_image[self.points[i][1], self.points[i][0]]
-            cur_z = surface.at_point(self.points[i][0], self.points[i][1]).norm_z
+        for i in range(0, len(self.__points) - 1):
+            cur_dim = primary_image[self.__points[i][1], self.__points[i][0]]
+            cur_z = surface.at_point(self.__points[i][0], self.__points[i][1]).norm_z
             cur_magnitude = math.hypot(cur_dim, cur_z)
 
-            next_dim = primary_image[self.points[i + 1][1], self.points[i + 1][0]]
-            next_z = surface.at_point(self.points[i + 1][0], self.points[i + 1][1]).norm_z
+            next_dim = primary_image[self.__points[i + 1][1], self.__points[i + 1][0]]
+            next_z = surface.at_point(self.__points[i + 1][0], self.__points[i + 1][1]).norm_z
             next_magnitude = math.hypot(next_dim, next_z)
 
             delta = abs(cur_magnitude - next_magnitude)
@@ -212,7 +272,7 @@ class Path:
 
     def compute_thicknesses(self, surface, thickness_parameters):
         thicknesses = []
-        for i, point in enumerate(self.points):
+        for i, point in enumerate(self.__points):
             constant_component = thickness_parameters.const
             surface_data = surface.at_point(point[0], point[1])
             z_component = (1 - surface_data.z) * thickness_parameters.z
@@ -227,9 +287,6 @@ class Path:
 
         self.thicknesses = thicknesses
 
-    def simple_cull(self, factor):
-        pass
-
 
 class Curve1D:
     def __init__(self, path, optimisation_factor, fit_error):
@@ -243,6 +300,7 @@ class Curve1D:
 
         self.interval_points = []
         self.offset_points = []
+        self.cull_survivor_points = []
         self.optimised_path = []
 
         self.__generate()
@@ -258,9 +316,10 @@ class Curve1D:
                 if i % optimisation_factor == 0:
                     keep.append(points[i])
             keep.append(points[-1])
-
-            points = measure.approximate_polygon(np.array(keep), 0.8)
-            self.optimised_path = Path(points.tolist())
+            self.cull_survivor_points = keep
+            # points = measure.approximate_polygon(np.array(keep), 0.8)
+            # self.optimised_path = Path(points.tolist())
+            self.optimised_path = Path(points)
 
         else:
             points = np.array(path.points)

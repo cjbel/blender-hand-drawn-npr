@@ -10,18 +10,17 @@ logger = logging.getLogger(__name__)
 
 class Surface:
 
-    def __init__(self, obj_image=None, z_image=None, diffdir_image=None, norm_image=None, u_image=None, v_image=None):
+    def __init__(self, obj_image=None, z_image=None, diffdir_image=None,
+                 norm_x_image=None, norm_y_image=None, norm_z_image=None,
+                 u_image=None, v_image=None):
         self.obj_image = obj_image
         self.z_image = z_image
         self.diffdir_image = diffdir_image
-        # self.norm_image = norm_image
-        self.norm_x = None
-        self.norm_y = None
-        self.norm_z = None
+        self.norm_x_image = norm_x_image
+        self.norm_y_image = norm_y_image
+        self.norm_z_image = norm_z_image
         self.u_image = u_image
         self.v_image = v_image
-        # self.u_curvature_image = None
-        # self.v_curvature_image = None
 
         self.SurfaceData = namedtuple("SurfaceData", "obj z diffdir norm_x norm_y norm_z u v")
 
@@ -44,13 +43,11 @@ class Surface:
         norm_image = exposure.adjust_gamma(norm_image, 2.2)
 
         # Normal x values are encoded in red channel.
-        self.norm_x = norm_image[:, :, 0]
+        self.norm_x_image = norm_image[:, :, 0]
         # Normal y values are encoded in green channel.
-        self.norm_y = norm_image[:, :, 1]
+        self.norm_y_image = norm_image[:, :, 1]
         # Normal z values are encoded in blue channel.
-        self.norm_z = norm_image[:, :, 2]
-
-        # self.norm_image = io.imread(file_path, as_gray=True)
+        self.norm_z_image = norm_image[:, :, 2]
 
     def init_uv_image(self, file_path):
         # 16-bit colour-depth, use imageio.
@@ -65,20 +62,19 @@ class Surface:
 
         logger.info("UV image loaded: %s", file_path)
 
-        # self.u_curvature_image = np.zeros_like(self.obj_image)
-        # self.v_curvature_image = np.zeros_like(self.obj_image)
-
     def at_point(self, x, y):
         assert x >= 0
         assert y >= 0
 
+        x = int(x)
+        y = int(y)
+
         surface_data = self.SurfaceData(obj=self.obj_image[y, x],
                                         z=self.z_image[y, x],
                                         diffdir=self.diffdir_image[y, x],
-                                        # norm=self.norm_image[y, x],
-                                        norm_x=self.norm_x[y, x],
-                                        norm_y=self.norm_y[y, x],
-                                        norm_z=self.norm_z[y, x],
+                                        norm_x=self.norm_x_image[y, x],
+                                        norm_y=self.norm_y_image[y, x],
+                                        norm_z=self.norm_z_image[y, x],
                                         u=self.u_image[y, x],
                                         v=self.v_image[y, x])
         return surface_data
