@@ -97,7 +97,7 @@ class TestPath(unittest.TestCase):
         contours = measure.find_contours(image, 0.444)
         uv_path = Path(contours[0].tolist(), is_rc=True).round()
 
-        trimmed_paths = uv_path.trim_uv(image=image, target_intensity=0.4, allowable_deviance=0.1)
+        trimmed_paths = uv_path.trim_uv(image=image, target_intensity=0.4, primary_trim_size=0.1)
 
         # Expected results are two paths as follows.
         self.assertEqual(((4, 8), (4, 8), (4, 7), (4, 6), (4, 5)), trimmed_paths[0].points)

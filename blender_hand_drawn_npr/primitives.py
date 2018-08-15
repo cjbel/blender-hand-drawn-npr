@@ -23,8 +23,10 @@ Settings = namedtuple("Settings", ["rdp_epsilon",
                                    "curve_sampling_interval",
                                    "stroke_colour",
                                    "streamline_segments",
-                                   "thickness_parameters",
-                                   "uv_allowable_deviance"])
+                                   "silhouette_thickness_parameters",
+                                   "streamline_thickness_parameters",
+                                   "uv_primary_trim_size",
+                                   "uv_secondary_trim_size"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -212,18 +214,22 @@ class Path:
 
         return Path(points)
 
-    def trim_uv(self, target_intensity, image, allowable_deviance):
+    def trim_uv(self, target_intensity, primary_image, secondary_image, primary_trim_size, secondary_trim_size):
 
         points = list(self.__points)
 
-        min_allowable = target_intensity - allowable_deviance
-        max_allowable = target_intensity + allowable_deviance
+        min_allowable_primary = target_intensity - primary_trim_size
+        max_allowable_primary = target_intensity + primary_trim_size
+
+        min_allowable_secondary = secondary_image.min() + secondary_trim_size
+        max_allowable_secondary = secondary_image.max() - secondary_trim_size
 
         last_was_accepted = None
         paths = []
         continuous_points = []
         for point in points:
-            if min_allowable <= image[point[1], point[0]] <= max_allowable:
+            if min_allowable_primary <= primary_image[point[1], point[0]] <= max_allowable_primary and \
+                    min_allowable_secondary <= secondary_image[point[1], point[0]] <= max_allowable_secondary:
                 # Accept the point.
                 continuous_points.append(point)
                 last_was_accepted = True
@@ -290,27 +296,28 @@ class Path:
         self._curvatures = smoothed
 
     # def compute_thicknesses(self, surface, thickness_parameters):
-        # thicknesses = []
-        # for i, point in enumerate(self.__points):
-        #     constant_component = thickness_parameters.const
-        #     surface_data = surface.at_point(point[0], point[1])
-        #     z_component = (1 - surface_data.z) * thickness_parameters.z
-        #     diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
-        #     try:
-        #         curvature_component = self._curvatures[i] * thickness_parameters.curvature
-        #     except (IndexError, TypeError):
-        #         curvature_component = 0
-        #
-        #     thickness = constant_component + z_component + diffdir_component + curvature_component
-        #     thicknesses.append(thickness)
-        #
-        # self._thicknesses = tuple(thicknesses)
+    # thicknesses = []
+    # for i, point in enumerate(self.__points):
+    #     constant_component = thickness_parameters.const
+    #     surface_data = surface.at_point(point[0], point[1])
+    #     z_component = (1 - surface_data.z) * thickness_parameters.z
+    #     diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
+    #     try:
+    #         curvature_component = self._curvatures[i] * thickness_parameters.curvature
+    #     except (IndexError, TypeError):
+    #         curvature_component = 0
+    #
+    #     thickness = constant_component + z_component + diffdir_component + curvature_component
+    #     thicknesses.append(thickness)
+    #
+    # self._thicknesses = tuple(thicknesses)
 
 
 class Curve1D:
     """
     A Curve1D object represents a composite Bezier curve which approximates a Path.
     """
+
     def __init__(self, path, fit_error):
         self.path = path
         self.fit_error = fit_error

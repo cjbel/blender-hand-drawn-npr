@@ -16,30 +16,6 @@ class Illustrator:
         self.img_dir = img_dir
         self.out_filename = out_filename
 
-        # # Flat. Issue with corner detection on far end.
-        # self.settings = Settings(rdp_epsilon=50,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=40,
-        #                          subpix_window_size=20,
-        #                          curve_sampling_interval=50,
-        #                          thickness_model=None,
-        #                          stroke_colour="black",
-        #                          streamline_segments=16,
-        #                          thickness_parameters=None,
-        #                          uv_allowable_deviance=30)
-        #
-        # # Bump.
-        # self.settings = Settings(rdp_epsilon=50,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=100,
-        #                          subpix_window_size=50,
-        #                          curve_sampling_interval=50,
-        #                          thickness_model=None,
-        #                          stroke_colour="black",
-        #                          streamline_segments=16,
-        #                          thickness_parameters=None,
-        #                          uv_allowable_deviance=30)
-
         # Undulating plane.
         self.settings = Settings(rdp_epsilon=5,
                                  curve_fit_error=0.1,
@@ -48,8 +24,10 @@ class Illustrator:
                                  curve_sampling_interval=10,
                                  stroke_colour="black",
                                  streamline_segments=32,
-                                 thickness_parameters=ThicknessParameters(const=0.01, z=2, diffdir=0, curvature=0),
-                                 uv_allowable_deviance=90)
+                                 silhouette_thickness_parameters=ThicknessParameters(const=0.005, z=4, diffdir=0, curvature=0),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0.005, z=1, diffdir=0, curvature=0),
+                                 uv_primary_trim_size=200,
+                                 uv_secondary_trim_size=20)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -70,9 +48,6 @@ class Illustrator:
         streamlines = Streamlines(surface=self.surface, settings=self.settings)
         streamlines.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
-
-        # from skimage import io
-        # io.imsave("/tmp/curvature.png", self.surface.u_curvature_image)
 
     def save(self):
         self.illustration.save()

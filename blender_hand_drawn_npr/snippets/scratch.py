@@ -70,7 +70,7 @@ contours = measure.find_contours(image, 0.444)
 print(contours)
 uv_path = Path(contours[0].tolist(), is_rc=True).round()
 
-trimmed_paths = uv_path.trim_uv(image=image, target_intensity=0.4, allowable_deviance=.1)
+trimmed_paths = uv_path.trim_uv(image=image, target_intensity=0.4, primary_trim_size=.1)
 print("Original: ", uv_path.points)
 print("UV paths:  ")
 for trimmed_path in trimmed_paths:

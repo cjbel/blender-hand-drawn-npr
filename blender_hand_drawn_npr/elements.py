@@ -8,20 +8,20 @@ from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
 logger = logging.getLogger(__name__)
 
 
-def create_stroke(path, surface, settings):
+def create_stroke(path, surface, thickness_parameters, settings):
     logger.debug("Creating stroke with %d points...", len(path.points))
 
     construction_curve = Curve1D(path=path, fit_error=settings.curve_fit_error)
 
     upper_path = construction_curve.offset(interval=settings.curve_sampling_interval,
                                            surface=surface,
-                                           thickness_parameters=settings.thickness_parameters,
+                                           thickness_parameters=thickness_parameters,
                                            positive_direction=True)
     upper_curve = Curve1D(path=upper_path, fit_error=settings.curve_fit_error)
 
     lower_path = construction_curve.offset(interval=settings.curve_sampling_interval,
                                            surface=surface,
-                                           thickness_parameters=settings.thickness_parameters,
+                                           thickness_parameters=thickness_parameters,
                                            positive_direction=False)
     lower_curve = Curve1D(path=lower_path, fit_error=settings.curve_fit_error)
 
@@ -78,7 +78,9 @@ class Silhouette:
             # # TODO: Have an entry for this in settings.
             # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
 
-            stroke = create_stroke(path=path, surface=self.surface, settings=self.settings)
+            stroke = create_stroke(path=path, surface=self.surface,
+                                   thickness_parameters=self.settings.silhouette_thickness_parameters,
+                                   settings=self.settings)
             svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stroke.d)
             self.svg_strokes.append(svg_stroke)
@@ -152,7 +154,8 @@ class Streamlines:
         for intensity in u_intensities:
             norm_image_component = self.surface.norm_x_image
             logger.debug("Creating (u) streamline at intensity %d...", intensity)
-            u_streamline = Streamline(uv_image_component=u_image,
+            u_streamline = Streamline(primary_uv_image_component=u_image,
+                                      secondary_uv_image_component=v_image,
                                       norm_image_component=norm_image_component,
                                       surface=self.surface,
                                       intensity=intensity,
@@ -163,7 +166,8 @@ class Streamlines:
         for intensity in v_intensities:
             norm_image_component = self.surface.norm_y_image
             logger.debug("Creating (v) streamline at intensity %d...", intensity)
-            v_streamline = Streamline(uv_image_component=v_image,
+            v_streamline = Streamline(primary_uv_image_component=v_image,
+                                      secondary_uv_image_component=u_image,
                                       norm_image_component=norm_image_component,
                                       surface=self.surface,
                                       intensity=intensity,
@@ -176,37 +180,6 @@ class Streamlines:
             svg_stroke.push(stroke.d)
             self.svg_strokes.append(svg_stroke)
 
-            # #####################################################################################
-            # # TODO: THIS BLOCK IS FOR TESTING, PLOTS THE CONSTRUCTION CURVE.
-            # construction_curve = Curve1D(path=stroke.upper_curve.path,
-            #                              optimisation_factor=self.settings.rdp_epsilon,
-            #                              fit_error=self.settings.curve_fit_error)
-            # #
-            # # points = stroke.upper_curve.offset_points
-            # # for point in points:
-            # #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="blue"))
-            # # #
-            # points = stroke.upper_curve.path.points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
-            #
-            # center_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.1, fill="none")
-            # center_stroke.push(construction_curve.d)
-            # self.svg_strokes.append(center_stroke)
-
-            # # points = stroke.lower_curve.path.points
-            # # for point in points:
-            # #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.8, fill="pink"))
-            #
-            # points = stroke.upper_curve.interval_points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="red"))
-            #
-            # points = stroke.upper_curve.optimised_path.points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="yellow"))
-            # #####################################################################################
-
         logger.info("Streamline Strokes prepared: %d", len(self.svg_strokes))
 
 
@@ -215,8 +188,10 @@ class Streamline:
     A Streamline is a collection of Strokes which follow a specified UV intensity value.
     """
 
-    def __init__(self, uv_image_component, norm_image_component, surface, intensity, settings):
-        self.uv_image_component = uv_image_component
+    def __init__(self, primary_uv_image_component, secondary_uv_image_component, norm_image_component,
+                 surface, intensity, settings):
+        self.primary_uv_image_component = primary_uv_image_component
+        self.secondary_uv_image_component = secondary_uv_image_component
         self.norm_image_component = norm_image_component
         self.surface = surface
         self.intensity = intensity
@@ -225,7 +200,7 @@ class Streamline:
         self.strokes = []
 
     def generate(self):
-        contours = measure.find_contours(self.uv_image_component, self.intensity)
+        contours = measure.find_contours(self.primary_uv_image_component, self.intensity)
         logger.debug("Streamline contours found: %d", len(contours))
 
         for contour in contours:
@@ -233,8 +208,10 @@ class Streamline:
             path = Path([[coord[1], coord[0]] for coord in contour])
             # Condition and create final paths.
             paths = path.round().bump(self.surface).remove_dupes().trim_uv(target_intensity=self.intensity,
-                                                                          image=self.uv_image_component,
-                                                                          allowable_deviance=self.settings.uv_allowable_deviance)
+                                                                           primary_image=self.primary_uv_image_component,
+                                                                           secondary_image=self.secondary_uv_image_component,
+                                                                           primary_trim_size=self.settings.uv_primary_trim_size,
+                                                                           secondary_trim_size=self.settings.uv_secondary_trim_size)
 
             for path in paths:
                 logger.debug("UV contour split into %d paths.", len(paths))
@@ -251,22 +228,13 @@ class Streamline:
                     cull_factor = 2
                     optimise_factor = 2
                     path = path.simple_cull(cull_factor).optimise(optimise_factor)
-                    stroke = create_stroke(path=path, surface=self.surface, settings=self.settings)
+                    stroke = create_stroke(path=path, surface=self.surface,
+                                           thickness_parameters=self.settings.streamline_thickness_parameters,
+                                           settings=self.settings)
 
                     self.strokes.append(stroke)
                 else:
                     logger.debug("Streamline of length %d rejected", num_points)
-
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        # conts = [np.array(path.points)]
-        # # Display the image and plot all contours found
-        # fig, ax = plt.subplots()
-        # ax.imshow(self.primary_image, interpolation='nearest', cmap=plt.cm.gray)
-        #
-        # for cont in conts:
-        #     ax.plot(cont[:, 1], cont[:, 0], linewidth=2)
-        # plt.show()
 
 
 if __name__ == "__main__":
