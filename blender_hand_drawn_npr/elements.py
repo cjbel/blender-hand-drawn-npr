@@ -2,24 +2,28 @@ import logging
 
 import svgwrite
 from skimage import measure
-import copy
 
-from blender_hand_drawn_npr.primitives import ThicknessParameters, Path, Curve1D, Stroke
+from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
 
 logger = logging.getLogger(__name__)
 
 
-def create_stroke(path, settings):
+def create_stroke(path, surface, settings):
     logger.debug("Creating stroke with %d points...", len(path.points))
 
-    construction_curve = Curve1D(path=path, optimisation_factor=settings.rdp_epsilon,
-                                 fit_error=settings.curve_fit_error)
+    construction_curve = Curve1D(path=path, fit_error=settings.curve_fit_error)
 
-    upper_curve = copy.deepcopy(construction_curve)
-    upper_curve.offset(interval=settings.curve_sampling_interval)
+    upper_path = construction_curve.offset(interval=settings.curve_sampling_interval,
+                                           surface=surface,
+                                           thickness_parameters=settings.thickness_parameters,
+                                           positive_direction=True)
+    upper_curve = Curve1D(path=upper_path, fit_error=settings.curve_fit_error)
 
-    lower_curve = copy.deepcopy(construction_curve)
-    lower_curve.offset(interval=settings.curve_sampling_interval, positive_direction=False)
+    lower_path = construction_curve.offset(interval=settings.curve_sampling_interval,
+                                           surface=surface,
+                                           thickness_parameters=settings.thickness_parameters,
+                                           positive_direction=False)
+    lower_curve = Curve1D(path=lower_path, fit_error=settings.curve_fit_error)
 
     return Stroke(upper_curve=upper_curve, lower_curve=lower_curve)
 
@@ -54,66 +58,65 @@ class Silhouette:
         path = Path([[coord[1], coord[0]] for coord in contours])
 
         # Initial Path must be split into multiple Paths if corners are present.
-        if path.find_corners(self.surface.obj_image, self.settings.harris_min_distance,
-                             self.settings.subpix_window_size):
-            self.paths += path.split_corners()
+        corners = path.find_corners(self.surface.obj_image, self.settings.harris_min_distance,
+                                    self.settings.subpix_window_size)
+        logger.info("Silhouette corners found: %d", len(corners))
+
+        if corners:
+            self.paths += path.split_corners(corners)
         else:
             self.paths.append(path)
 
         logger.info("Silhouette Paths found: %d", len(self.paths))
 
         for path in self.paths:
-            path.bump(self.surface)
+            # TODO: Roll into settings.
+            cull_factor = 2
+            optimise_factor = 2
+            path = path.round().bump(self.surface).remove_dupes().simple_cull(cull_factor).optimise(optimise_factor)
 
-            # TODO: Have an entry for this in settings.
-            path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
+            # # TODO: Have an entry for this in settings.
+            # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
 
-            # stroke = create_stroke(path=path, settings=self.settings)
-            # svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
-            # svg_stroke.push(stroke.d)
-            # self.svg_strokes.append(svg_stroke)
+            stroke = create_stroke(path=path, surface=self.surface, settings=self.settings)
+            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+            svg_stroke.push(stroke.d)
+            self.svg_strokes.append(svg_stroke)
 
             # #####################################################################################
-            # # TODO: THIS BLOCK IS FOR TESTING, PLOTS THE CONSTRUCTION CURVE.
-            # construction_curve = Curve1D(path=path,
-            #                              optimisation_factor=self.settings.rdp_epsilon,
-            #                              fit_error=self.settings.curve_fit_error)
+            # # TODO: THIS BLOCK IS FOR TESTING.
             #
-            # points = construction_curve.path.points
-            # for point in points:
+            # curve = Curve1D(path=path, fit_error=self.settings.curve_fit_error)
+            # svg_stroke = svgwrite.path.Path(stroke="black", fill="none", stroke_width=0.2)
+            # svg_stroke.push(curve.d)
+            # self.svg_strokes.append(svg_stroke)
+            #
+            # offset_path_upper = curve.offset(interval=self.settings.curve_sampling_interval,
+            #                                  surface=self.surface,
+            #                                  thickness_parameters=self.settings.thickness_parameters,
+            #                                  positive_direction=True)
+            # for point in offset_path_upper.points:
             #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="magenta"))
             #
-            # center_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.1, fill="none")
-            # center_stroke.push(construction_curve.d)
-            # self.svg_strokes.append(center_stroke)
-            # #
-            # points = construction_curve.cull_survivor_points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="grey"))
+            # offset_path_lower = curve.offset(interval=self.settings.curve_sampling_interval,
+            #                                  surface=self.surface,
+            #                                  thickness_parameters=self.settings.thickness_parameters,
+            #                                  positive_direction=False)
+            # for point in offset_path_lower.points:
+            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="pink"))
             #
-            # points = construction_curve.optimised_path.points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="yellow"))
+            # upper_curve = Curve1D(path=offset_path_upper, fit_error=self.settings.curve_fit_error)
+            # svg_stroke = svgwrite.path.Path(stroke="blue", fill="none", stroke_width=0.2)
+            # svg_stroke.push(upper_curve.d)
+            # self.svg_strokes.append(svg_stroke)
             #
-            # points = stroke.upper_curve.interval_points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="blue"))
-            #
-            # points = stroke.upper_curve.offset_points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="green"))
-            #
-            # points = stroke.upper_curve.optimised_path.points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
-            #
-            # outline_stroke = svgwrite.path.Path(stroke="red", stroke_width=0.25, fill="none")
-            # outline_stroke.push(stroke.lower_curve.d)
-            # outline_stroke.push(stroke.upper_curve.d)
-            # self.svg_strokes.append(outline_stroke)
+            # lower_curve = Curve1D(path=offset_path_lower, fit_error=self.settings.curve_fit_error)
+            # svg_stroke = svgwrite.path.Path(stroke="teal", fill="none", stroke_width=0.2)
+            # svg_stroke.push(lower_curve.d)
+            # self.svg_strokes.append(svg_stroke)
             # #####################################################################################
 
-        logger.info("Silhouette Strokes prepared: %d", len(self.svg_strokes))
+            logger.info("Silhouette Strokes prepared: %d", len(self.svg_strokes))
 
 
 class Streamlines:
@@ -147,7 +150,7 @@ class Streamlines:
 
         strokes = []
         for intensity in u_intensities:
-            norm_image_component = self.surface.norm_x
+            norm_image_component = self.surface.norm_x_image
             logger.debug("Creating (u) streamline at intensity %d...", intensity)
             u_streamline = Streamline(uv_image_component=u_image,
                                       norm_image_component=norm_image_component,
@@ -158,7 +161,7 @@ class Streamlines:
             strokes += u_streamline.strokes
 
         for intensity in v_intensities:
-            norm_image_component = self.surface.norm_y
+            norm_image_component = self.surface.norm_y_image
             logger.debug("Creating (v) streamline at intensity %d...", intensity)
             v_streamline = Streamline(uv_image_component=v_image,
                                       norm_image_component=norm_image_component,
@@ -169,27 +172,27 @@ class Streamlines:
             strokes += v_streamline.strokes
 
         for stroke in strokes:
-            # svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
-            # svg_stroke.push(stroke.d)
-            # self.svg_strokes.append(svg_stroke)
+            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+            svg_stroke.push(stroke.d)
+            self.svg_strokes.append(svg_stroke)
 
             # #####################################################################################
             # # TODO: THIS BLOCK IS FOR TESTING, PLOTS THE CONSTRUCTION CURVE.
-            construction_curve = Curve1D(path=stroke.upper_curve.path,
-                                         optimisation_factor=self.settings.rdp_epsilon,
-                                         fit_error=self.settings.curve_fit_error)
-            #
-            # points = stroke.upper_curve.offset_points
-            # for point in points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="blue"))
+            # construction_curve = Curve1D(path=stroke.upper_curve.path,
+            #                              optimisation_factor=self.settings.rdp_epsilon,
+            #                              fit_error=self.settings.curve_fit_error)
             # #
-            points = stroke.upper_curve.path.points
-            for point in points:
-                self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
-
-            center_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.1, fill="none")
-            center_stroke.push(construction_curve.d)
-            self.svg_strokes.append(center_stroke)
+            # # points = stroke.upper_curve.offset_points
+            # # for point in points:
+            # #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="blue"))
+            # # #
+            # points = stroke.upper_curve.path.points
+            # for point in points:
+            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
+            #
+            # center_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.1, fill="none")
+            # center_stroke.push(construction_curve.d)
+            # self.svg_strokes.append(center_stroke)
 
             # # points = stroke.lower_curve.path.points
             # # for point in points:
@@ -226,30 +229,33 @@ class Streamline:
         logger.debug("Streamline contours found: %d", len(contours))
 
         for contour in contours:
-            # Sometimes a contour of small length (~5-10 is found, consider a check here to reject them.
-            if len(contour) < 10:
-                logger.debug("Contour of length %s rejected.", len(contour))
-                break
-            logger.debug("Contour length: %d", len(contour))
-
-            # Create the Path.
+            # Create the rough path.
             path = Path([[coord[1], coord[0]] for coord in contour])
-            path.bump(self.surface)
-            path.trim_uv(target_intensity=self.intensity, image=self.uv_image_component,
-                         allowable_deviance=self.settings.uv_allowable_deviance)
+            # Condition and create final paths.
+            paths = path.round().bump(self.surface).remove_dupes().trim_uv(target_intensity=self.intensity,
+                                                                          image=self.uv_image_component,
+                                                                          allowable_deviance=self.settings.uv_allowable_deviance)
 
-            # TODO: Not sure if this is really needed, but it is possible the path will be trimmed to zero length (may only be an issue with spheres?).
-            if len(path.__points) == 0:
-                logger.debug("Zero length path after trim.")
-                break
+            for path in paths:
+                logger.debug("UV contour split into %d paths.", len(paths))
 
-            path.compute_curvatures(self.norm_image_component, self.surface)
+                num_points = len(path.points)
+                if num_points > 10:
+                    logger.debug("Streamline length: %d", num_points)
+                    # path.compute_curvatures(self.norm_image_component, self.surface)
 
-            # TODO: Have an entry for this in settings.
-            path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
+                    # TODO: Have an entry for this in settings.
+                    # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
 
-            stroke = create_stroke(path=path, settings=self.settings)
-            self.strokes.append(stroke)
+                    # TODO: Roll into settings.
+                    cull_factor = 2
+                    optimise_factor = 2
+                    path = path.simple_cull(cull_factor).optimise(optimise_factor)
+                    stroke = create_stroke(path=path, surface=self.surface, settings=self.settings)
+
+                    self.strokes.append(stroke)
+                else:
+                    logger.debug("Streamline of length %d rejected", num_points)
 
         # import numpy as np
         # import matplotlib.pyplot as plt

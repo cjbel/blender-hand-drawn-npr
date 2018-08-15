@@ -42,14 +42,14 @@ class Illustrator:
 
         # Undulating plane.
         self.settings = Settings(rdp_epsilon=5,
-                                 curve_fit_error=0.001,
+                                 curve_fit_error=0.1,
                                  harris_min_distance=40,
                                  subpix_window_size=20,
                                  curve_sampling_interval=10,
                                  stroke_colour="black",
-                                 streamline_segments=2,
-                                 thickness_parameters=ThicknessParameters(const=0.1, z=0, diffdir=0, curvature=0),
-                                 uv_allowable_deviance=40)
+                                 streamline_segments=32,
+                                 thickness_parameters=ThicknessParameters(const=0.01, z=2, diffdir=0, curvature=0),
+                                 uv_allowable_deviance=90)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -67,9 +67,9 @@ class Illustrator:
         silhouette.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in silhouette.svg_strokes]
 
-        # streamlines = Streamlines(surface=self.surface, settings=self.settings)
-        # streamlines.generate()
-        # [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
+        streamlines = Streamlines(surface=self.surface, settings=self.settings)
+        streamlines.generate()
+        [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
 
         # from skimage import io
         # io.imsave("/tmp/curvature.png", self.surface.u_curvature_image)
