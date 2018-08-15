@@ -18,7 +18,7 @@ class Illustrator:
 
         # Undulating plane.
         self.settings = Settings(cull_factor=5,
-                                 optimise_factor=2.4,
+                                 optimise_factor=5,
                                  curve_fit_error=0.01,
                                  harris_min_distance=40,
                                  subpix_window_size=20,

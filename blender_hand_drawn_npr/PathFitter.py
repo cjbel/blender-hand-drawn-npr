@@ -234,7 +234,7 @@ class PathFitter:
 
     # Use least-squares method to find Bezier control points for region.
     def generateBezier(self, first, last, uPrime, tan1, tan2):
-        epsilon = 1e-11
+        epsilon = 1e-02  # Changed from 1-e11 to reduce issues with wisps on resultant curves.
         pt1 = self.points[first]
         pt2 = self.points[last]
         # Create the C and X matrices
