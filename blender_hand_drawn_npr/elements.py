@@ -71,8 +71,8 @@ class Silhouette:
 
         for path in self.paths:
             # TODO: Roll into settings.
-            cull_factor = 2
-            optimise_factor = 2
+            cull_factor = self.settings.cull_factor
+            optimise_factor = self.settings.optimise_factor
             path = path.round().bump(self.surface).remove_dupes().simple_cull(cull_factor).optimise(optimise_factor)
 
             # # TODO: Have an entry for this in settings.
@@ -163,6 +163,11 @@ class Streamlines:
             u_streamline.generate()
             strokes += u_streamline.strokes
 
+            # # TODO: For debug visualisation only.
+            # for path in u_streamline.paths:
+            #     for point in path.points:
+            #         self.svg_strokes.append(svgwrite.shapes.Circle((str(point[0]), str(point[1])), r=2, fill="red"))
+
         for intensity in v_intensities:
             norm_image_component = self.surface.norm_y_image
             logger.debug("Creating (v) streamline at intensity %d...", intensity)
@@ -175,10 +180,19 @@ class Streamlines:
             v_streamline.generate()
             strokes += v_streamline.strokes
 
+            # # TODO: For debug visualisation only.
+            # for path in v_streamline.paths:
+            #     for point in path.points:
+            #         self.svg_strokes.append(svgwrite.shapes.Circle((str(point[0]), str(point[1])), r=2, fill="green"))
+
         for stroke in strokes:
             svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stroke.d)
             self.svg_strokes.append(svg_stroke)
+
+            # for point in stroke.upper_curve.path.points:
+            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
+
 
         logger.info("Streamline Strokes prepared: %d", len(self.svg_strokes))
 
@@ -196,6 +210,7 @@ class Streamline:
         self.surface = surface
         self.intensity = intensity
         self.settings = settings
+
         self.paths = []
         self.strokes = []
 
@@ -224,10 +239,13 @@ class Streamline:
                     # TODO: Have an entry for this in settings.
                     # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
 
-                    # TODO: Roll into settings.
-                    cull_factor = 2
-                    optimise_factor = 2
+                    cull_factor = self.settings.cull_factor
+                    optimise_factor = self.settings.optimise_factor
                     path = path.simple_cull(cull_factor).optimise(optimise_factor)
+
+                    # Store to allow plotting of construction points for debugging.
+                    self.paths.append(path)
+
                     stroke = create_stroke(path=path, surface=self.surface,
                                            thickness_parameters=self.settings.streamline_thickness_parameters,
                                            settings=self.settings)

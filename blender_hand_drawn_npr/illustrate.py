@@ -17,15 +17,16 @@ class Illustrator:
         self.out_filename = out_filename
 
         # Undulating plane.
-        self.settings = Settings(rdp_epsilon=5,
-                                 curve_fit_error=0.1,
+        self.settings = Settings(cull_factor=5,
+                                 optimise_factor=2.4,
+                                 curve_fit_error=0.01,
                                  harris_min_distance=40,
                                  subpix_window_size=20,
                                  curve_sampling_interval=10,
                                  stroke_colour="black",
                                  streamline_segments=32,
-                                 silhouette_thickness_parameters=ThicknessParameters(const=0.005, z=4, diffdir=0, curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0.005, z=1, diffdir=0, curvature=0),
+                                 silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0, curvature=0),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=1, diffdir=0, curvature=0),
                                  uv_primary_trim_size=200,
                                  uv_secondary_trim_size=20)
 

@@ -16,7 +16,8 @@ from blender_hand_drawn_npr.models import Surface
 
 logger = logging.getLogger(__name__)
 
-Settings = namedtuple("Settings", ["rdp_epsilon",
+Settings = namedtuple("Settings", ["cull_factor",
+                                   "optimise_factor",
                                    "curve_fit_error",
                                    "harris_min_distance",
                                    "subpix_window_size",
