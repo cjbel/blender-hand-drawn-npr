@@ -33,7 +33,8 @@ ThicknessParameters = namedtuple("ThicknessParameters", ["const",
 
 class Path:
     """
-    A Path represents an immutable, ordered collection of image-space pixel coordinates ("points").
+    A Path represents an immutable, ordered collection of image-space pixel coordinates ("points"), and the thickness
+    values at each of these points.
     """
 
     def __init__(self, points, is_rc=False):
@@ -46,6 +47,9 @@ class Path:
             # Input coordinates are given in terms of (row, column), so swap to (x, y).
             self.__points = tuple((point[1], point[0]) for point in points)
 
+        self._thicknesses = None
+        self._curvatures = None
+
     @property
     def points(self):
         return self.__points
@@ -54,12 +58,9 @@ class Path:
     def points_as_rc(self):
         return tuple(((point[1], point[0]) for point in self.__points))
 
-    def __iter__(self):
-        return iter(self.__points)
-
     def round(self):
         """
-        :return: New Path object containing rounded points.
+        :return: New Path containing rounded points.
         """
         return Path(((int(round(point[0])), int(round(point[1]))) for point in self.__points))
 
@@ -186,12 +187,21 @@ class Path:
         return Path(unique)
 
     def simple_cull(self, n):
-        points = self.path.points
+        """
+
+        :param n: Minimum cull gap.
+        :return: Path where only the nth points are preserved. The first and last points are always preserved.
+        """
+
+        points = list(self.__points)
+
         keep = []
         for i in range(0, len(points) - 1):
-            if i % optimisation_factor == 0:
+            if i % n == 0 and i < ((len(points) - 1) - (n - 1)):
                 keep.append(points[i])
         keep.append(points[-1])
+
+        return Path(keep)
 
     def trim_uv(self, target_intensity, image, allowable_deviance):
 
@@ -248,7 +258,7 @@ class Path:
 
         # For streamlines with zero curvature along their lengths there is no need to need to continue.
         if len(nonzero_idx[0]) == 0:
-            self.curvatures = first_derivatives
+            self._curvatures = first_derivatives
             return
 
         # Pad start with zeros as needed.
@@ -268,7 +278,7 @@ class Path:
         # pyplot.plot(smoothed)
         # pyplot.show()
 
-        self.curvatures = smoothed
+        self._curvatures = smoothed
 
     def compute_thicknesses(self, surface, thickness_parameters):
         thicknesses = []
@@ -278,17 +288,20 @@ class Path:
             z_component = (1 - surface_data.z) * thickness_parameters.z
             diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
             try:
-                curvature_component = self.curvatures[i] * thickness_parameters.curvature
-            except IndexError:
+                curvature_component = self._curvatures[i] * thickness_parameters.curvature
+            except (IndexError, TypeError):
                 curvature_component = 0
 
             thickness = constant_component + z_component + diffdir_component + curvature_component
             thicknesses.append(thickness)
 
-        self.thicknesses = thicknesses
+        self._thicknesses = tuple(thicknesses)
 
 
 class Curve1D:
+    """
+    A Curve1D object represents a composite Bezier curve which approximates a Path.
+    """
     def __init__(self, path, optimisation_factor, fit_error):
         self.path = path
         self.optimisation_factor = optimisation_factor
@@ -298,9 +311,9 @@ class Curve1D:
         self.d_c = None
         self.d_m = None
 
-        self.interval_points = []
-        self.offset_points = []
-        self.cull_survivor_points = []
+        self.__interval_points = []
+        self.__offset_points = []
+        self.__cull_survivor_points = []
         self.optimised_path = []
 
         self.__generate()
@@ -308,21 +321,21 @@ class Curve1D:
     def __path_fit(self, path, fit_error, optimise=False, optimisation_factor=None):
         logger.debug("Starting path fit...")
 
-        if optimise:
-            assert optimisation_factor is not None
-            points = self.path.points
-            keep = []
-            for i in range(0, len(points) - 1):
-                if i % optimisation_factor == 0:
-                    keep.append(points[i])
-            keep.append(points[-1])
-            self.cull_survivor_points = keep
-            # points = measure.approximate_polygon(np.array(keep), 0.8)
-            # self.optimised_path = Path(points.tolist())
-            self.optimised_path = Path(points)
-
-        else:
-            points = np.array(path.points)
+        # if optimise:
+        #     assert optimisation_factor is not None
+        #     points = self.path.points
+        #     keep = []
+        #     for i in range(0, len(points) - 1):
+        #         if i % optimisation_factor == 0:
+        #             keep.append(points[i])
+        #     keep.append(points[-1])
+        #     self.cull_survivor_points = keep
+        #     # points = measure.approximate_polygon(np.array(keep), 0.8)
+        #     # self.optimised_path = Path(points.tolist())
+        #     self.optimised_path = Path(points)
+        #
+        # else:
+        #     points = np.array(path.points)
 
         self.d = pf.pathtosvg((pf.fitpath(points, fit_error)))
 
@@ -357,7 +370,7 @@ class Curve1D:
                 logger.debug("Step: %f", step)
                 # Extract the coordinates at this t-step.
                 interval_point = [segment.point(step).real, segment.point(step).imag]
-                self.interval_points.append(interval_point)
+                self.__interval_points.append(interval_point)
                 # Sometimes the point will be off the surface due to errors in curve fit. Perform nearest
                 # neighbour to get valid surface attributes, but keep the point coordinates.
                 # TODO: Shouldnt there be a validity check before calling this to avoid unnecessary calls?
@@ -375,14 +388,14 @@ class Curve1D:
 
                 offset_coord = segment.point(step) + (thickness * normal * dir)
                 offset_point = [offset_coord.real, offset_coord.imag]
-                self.offset_points.append(offset_point)
+                self.__offset_points.append(offset_point)
 
         if not positive_direction:
-            offset_points = np.array(self.offset_points)
+            offset_points = np.array(self.__offset_points)
             offset_points = np.flip(offset_points, 0)
-            self.offset_points = list(offset_points)
+            self.__offset_points = list(offset_points)
 
-        self.__path_fit(path=Path(self.offset_points), fit_error=self.fit_error, optimise=False)
+        self.__path_fit(path=Path(self.__offset_points), fit_error=self.fit_error, optimise=False)
 
         logger.debug("Offset complete.")
 

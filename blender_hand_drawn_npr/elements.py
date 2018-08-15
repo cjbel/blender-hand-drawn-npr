@@ -75,25 +75,25 @@ class Silhouette:
 
             # #####################################################################################
             # # TODO: THIS BLOCK IS FOR TESTING, PLOTS THE CONSTRUCTION CURVE.
-            construction_curve = Curve1D(path=path,
-                                         optimisation_factor=self.settings.rdp_epsilon,
-                                         fit_error=self.settings.curve_fit_error)
-
-            points = construction_curve.path.points
-            for point in points:
-                self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="magenta"))
-
-            center_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.1, fill="none")
-            center_stroke.push(construction_curve.d)
-            self.svg_strokes.append(center_stroke)
+            # construction_curve = Curve1D(path=path,
+            #                              optimisation_factor=self.settings.rdp_epsilon,
+            #                              fit_error=self.settings.curve_fit_error)
             #
-            points = construction_curve.cull_survivor_points
-            for point in points:
-                self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="grey"))
-
-            points = construction_curve.optimised_path.points
-            for point in points:
-                self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="yellow"))
+            # points = construction_curve.path.points
+            # for point in points:
+            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="magenta"))
+            #
+            # center_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.1, fill="none")
+            # center_stroke.push(construction_curve.d)
+            # self.svg_strokes.append(center_stroke)
+            # #
+            # points = construction_curve.cull_survivor_points
+            # for point in points:
+            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="grey"))
+            #
+            # points = construction_curve.optimised_path.points
+            # for point in points:
+            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="yellow"))
             #
             # points = stroke.upper_curve.interval_points
             # for point in points:
