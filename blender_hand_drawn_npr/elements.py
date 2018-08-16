@@ -8,21 +8,23 @@ from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
 logger = logging.getLogger(__name__)
 
 
-def create_stroke(fit_path, hifi_path, surface, offset_vector, thickness_parameters, settings):
+def create_stroke(fit_path, hifi_path, thickness_parameters, surface, settings):
     logger.debug("Creating stroke with %d points...", len(fit_path.points))
 
     construction_curve = Curve1D(fit_path=fit_path, settings=settings)
 
     upper_path = construction_curve.offset(interval=settings.curve_sampling_interval,
                                            hifi_path=hifi_path,
-                                           offset_vector=offset_vector,
+                                           thickness_parameters=thickness_parameters,
+                                           surface=surface,
                                            positive_direction=True)
 
     upper_curve = Curve1D(fit_path=upper_path, settings=settings)
 
     lower_path = construction_curve.offset(interval=settings.curve_sampling_interval,
                                            hifi_path=hifi_path,
-                                           offset_vector=offset_vector,
+                                           thickness_parameters=thickness_parameters,
+                                           surface=surface,
                                            positive_direction=False)
     lower_curve = Curve1D(fit_path=lower_path, settings=settings)
 
@@ -76,10 +78,6 @@ class Silhouette:
             cull_factor = self.settings.cull_factor
             optimise_factor = self.settings.optimise_factor
             hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(cull_factor)
-            hifi_path.compute_offset_vector(surface=self.surface,
-                                            thickness_parameters=self.settings.silhouette_thickness_parameters)
-            offset_vector = hifi_path.offset_vector
-
             fit_path = hifi_path.optimise(optimise_factor)
 
             # # TODO: Have an entry for this in settings.
@@ -90,10 +88,10 @@ class Silhouette:
                 continue
 
             logger.debug("Creating Silhouette stroke...")
-            stroke = create_stroke(fit_path=fit_path, surface=self.surface,
+            stroke = create_stroke(fit_path=fit_path,
                                    hifi_path=hifi_path,
-                                   offset_vector=offset_vector,
                                    thickness_parameters=self.settings.silhouette_thickness_parameters,
+                                   surface=self.surface,
                                    settings=self.settings)
             svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stroke.d)
@@ -245,22 +243,27 @@ class Streamline:
                 logger.debug("UV contour split into %d paths.", len(paths))
 
                 num_points = len(path.points)
-                if num_points > 10:
-                    logger.debug("Streamline length: %d", num_points)
-                    # path.compute_curvatures(self.norm_image_component, self.surface)
+                # if num_points > 10:
+                #     logger.debug("Streamline length: %d", num_points)
+                # path.compute_curvatures(self.norm_image_component, self.surface)
 
-                    # TODO: Have an entry for this in settings.
-                    # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
+                # TODO: Have an entry for this in settings.
+                # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
 
-                    cull_factor = self.settings.cull_factor
-                    optimise_factor = self.settings.optimise_factor
-                    path = path.simple_cull(cull_factor).optimise(optimise_factor)
+                cull_factor = self.settings.cull_factor
+                optimise_factor = self.settings.optimise_factor
+                hifi_path = path.simple_cull(cull_factor)
+                fit_path = hifi_path.optimise(optimise_factor)
+
+                if len(fit_path.points) > 1:
 
                     # Store to allow plotting of construction points for debugging.
-                    self.paths.append(path)
+                    self.paths.append(fit_path)
 
-                    stroke = create_stroke(path=path, surface=self.surface,
+                    stroke = create_stroke(fit_path=fit_path,
+                                           hifi_path=hifi_path,
                                            thickness_parameters=self.settings.streamline_thickness_parameters,
+                                           surface=self.surface,
                                            settings=self.settings)
 
                     self.strokes.append(stroke)

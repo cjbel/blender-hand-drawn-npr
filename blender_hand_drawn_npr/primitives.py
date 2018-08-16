@@ -251,7 +251,7 @@ class Path:
         if continuous_points:
             paths.append(Path(continuous_points))
 
-        logger.debug("Paths after UV trim: %d", len(paths))
+        # logger.debug("Paths after UV trim: %d", len(paths))
 
         return paths
 
@@ -335,7 +335,7 @@ class Path:
             offsets.append(thickness)
 
         offsets = tuple(offsets)
-        logger.debug("Offset vector: %s", offsets)
+        # logger.debug("Offset vector: %s", offsets)
 
         self.__offset_vector = tuple(offsets)
 
@@ -361,56 +361,42 @@ class Curve1D:
     def __generate(self):
         logger.debug("Starting path fit...")
 
-        # if optimise:
-        #     assert optimisation_factor is not None
-        #     points = self.path.points
-        #     keep = []
-        #     for i in range(0, len(points) - 1):
-        #         if i % optimisation_factor == 0:
-        #             keep.append(points[i])
-        #     keep.append(points[-1])
-        #     self.cull_survivor_points = keep
-        #     # points = measure.approximate_polygon(np.array(keep), 0.8)
-        #     # self.optimised_path = Path(points.tolist())
-        #     self.optimised_path = Path(points)
-        #
-        # else:
-        #     points = np.array(path.points)
-
         self.d = pf.pathtosvg((pf.fitpath(self.fit_path.points, self.fit_error)))
 
         # Split the initial move-to from the remainder of the string.
         curve_start_index = self.d.index("C")
         self.d_m = self.d[0:curve_start_index - 1]
         self.d_c = self.d[curve_start_index:]
-        logger.debug("Path fit complete...")
+        # logger.debug("Path fit complete...")
 
-    # def __generate(self):
-    #     self.__path_fit(path=self.path, fit_error=self.fit_error, optimise=True,
-    #                     optimisation_factor=self.optimisation_factor)
-
-    def offset(self, interval, hifi_path, offset_vector, positive_direction=True):
+    def offset(self, interval, hifi_path, thickness_parameters, surface, positive_direction=True):
 
         self.__offset_points = []
 
+        hifi_path.compute_offset_vector(surface=surface,
+                                        thickness_parameters=thickness_parameters)
+        offset_vector = hifi_path.offset_vector
+
         logger.debug("Starting offset...")
-        for i, segment in enumerate(svgp.parse_path(self.d)):
+        svg_path = svgp.parse_path(self.d)
+        for i, segment in enumerate(svg_path):
+            # logger.debug("Processing segment: %d/%d", i, len(svg_path))
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
+            # logger.debug("Segment length: %f", segment.length())
             t_step = interval / segment.length()
-            logger.debug("Segment length: %f", segment.length())
-            logger.debug("T Step: %f", t_step)
+            # logger.debug("T Step: %f", t_step)
 
             # Generate a list of parameter values. To avoid duplicate construction Points between segments, ensure the
             # endpoint of a segment (t = 1) is captured only if processing the final segment of the overall
             # construction curve.
             t = arange(0, 1, t_step)
-            logger.debug("T list: %s", t)
+            # logger.debug("T list: %s", t)
             if i == len(svgp.parse_path(self.d)) - 1 and (1 not in t):
                 t = np.append(t, 1)
 
             for step in t:
-                logger.debug("Step: %f", step)
+                # logger.debug("Step: %f", step)
                 # Extract the coordinates at this t-step.
                 interval_point = [segment.point(step).real, segment.point(step).imag]
                 self.__interval_points.append(interval_point)
@@ -438,7 +424,7 @@ class Curve1D:
             offset_points = np.flip(offset_points, 0)
             self.__offset_points = list(offset_points)
 
-        logger.debug("Offset complete.")
+        # logger.debug("Offset complete.")
 
         return Path(self.__offset_points)
 
@@ -490,34 +476,4 @@ class Stroke:
         p.tostring()
         self.d = p.attribs['d']
 
-        logger.debug("Generate complete.")
-
-
-if __name__ == "__main__":
-    # print(spatial.distance.euclidean([1, 0], [2, 0]))
-
-    fake_image = np.ones((100, 100))
-    # fake_image[1, 1] = 1
-    surface = Surface(obj_image=fake_image,
-                      z_image=fake_image,
-                      diffdir_image=fake_image,
-                      norm_image=fake_image,
-                      u_image=fake_image,
-                      v_image=fake_image)
-
-    path = Path([[50, 20], [20, 50], [50, 80]])
-    path.bump(surface)
-
-    upper_curve = Curve1D(path=path, optimisation_factor=1, fit_error=0.1)
-    upper_curve.offset(interval=2, surface=surface, thickness_model=None)
-
-    lower_curve = Curve1D(path=path, optimisation_factor=1, fit_error=0.1)
-    lower_curve.offset(interval=2, surface=surface, thickness_model=None, positive_direction=False)
-
-    stroke = Stroke(lower_curve, upper_curve)
-
-    drawing = svgwrite.Drawing("/tmp/out.svg", (100, 100))
-    p = drawing.path(stroke_width=0, fill="black")
-    p.push(stroke.d)
-    drawing.add(p)
-    drawing.save()
+        # logger.debug("Generate complete.")

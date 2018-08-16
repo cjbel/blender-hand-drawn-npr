@@ -16,16 +16,16 @@ class Illustrator:
         self.img_dir = img_dir
         self.out_filename = out_filename
 
-        self.settings = Settings(cull_factor=5,
+        self.settings = Settings(cull_factor=50,
                                  optimise_factor=5,
                                  curve_fit_error=0.01,
                                  harris_min_distance=40,
                                  subpix_window_size=20,
-                                 curve_sampling_interval=10,
+                                 curve_sampling_interval=20,
                                  stroke_colour="black",
                                  streamline_segments=32,
                                  silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0, curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0, curvature=0),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=1, diffdir=0, curvature=0),
                                  uv_primary_trim_size=200,
                                  uv_secondary_trim_size=20)
 
@@ -45,9 +45,9 @@ class Illustrator:
         silhouette.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in silhouette.svg_strokes]
 
-        # streamlines = Streamlines(surface=self.surface, settings=self.settings)
-        # streamlines.generate()
-        # [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
+        streamlines = Streamlines(surface=self.surface, settings=self.settings)
+        streamlines.generate()
+        [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
 
     def save(self):
         self.illustration.save()
