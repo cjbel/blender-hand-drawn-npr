@@ -16,6 +16,7 @@ class Illustrator:
         self.img_dir = img_dir
         self.out_filename = out_filename
 
+        # Undulating plane.
         self.settings = Settings(cull_factor=50,
                                  optimise_factor=5,
                                  curve_fit_error=0.01,
@@ -24,10 +25,44 @@ class Illustrator:
                                  curve_sampling_interval=20,
                                  stroke_colour="black",
                                  streamline_segments=32,
-                                 silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0, curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=1, diffdir=0, curvature=0),
+                                 silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
+                                                                                     streamline_curvature=0),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=0, diffdir=0,
+                                                                                     streamline_curvature=50),
                                  uv_primary_trim_size=200,
                                  uv_secondary_trim_size=20)
+
+        # # Bump plane, 1D curvature.
+        # self.settings = Settings(cull_factor=50,
+        #                          optimise_factor=5,
+        #                          curve_fit_error=0.01,
+        #                          harris_min_distance=40,
+        #                          subpix_window_size=20,
+        #                          curve_sampling_interval=20,
+        #                          stroke_colour="black",
+        #                          streamline_segments=32,
+        #                          silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
+        #                                                                              streamline_curvature=0),
+        #                          streamline_thickness_parameters=ThicknessParameters(const=0, z=0, diffdir=0,
+        #                                                                              streamline_curvature=100),
+        #                          uv_primary_trim_size=200,
+        #                          uv_secondary_trim_size=20)
+
+        # # Hyperbolic paraboloid.
+        # self.settings = Settings(cull_factor=50,
+        #                          optimise_factor=5,
+        #                          curve_fit_error=0.01,
+        #                          harris_min_distance=40,
+        #                          subpix_window_size=20,
+        #                          curve_sampling_interval=20,
+        #                          stroke_colour="black",
+        #                          streamline_segments=32,
+        #                          silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
+        #                                                                              streamline_curvature=0),
+        #                          streamline_thickness_parameters=ThicknessParameters(const=0, z=0.8, diffdir=0,
+        #                                                                              streamline_curvature=100),
+        #                          uv_primary_trim_size=200,
+        #                          uv_secondary_trim_size=20)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -61,7 +96,7 @@ if __name__ == "__main__":
     # illustrator = Illustrator("/tmp/flat", "Illustration.svg")
     # illustrator = Illustrator("/tmp/sphere", "Illustration.svg")
     # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
     # illustrator = Illustrator("/tmp/surface_1D_curvature", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
     illustrator.illustrate()
     illustrator.save()

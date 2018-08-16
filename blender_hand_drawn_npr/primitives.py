@@ -32,7 +32,7 @@ Settings = namedtuple("Settings", ["cull_factor",
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
                                                          "diffdir",
-                                                         "curvature"])
+                                                         "streamline_curvature"])
 
 
 class Path:
@@ -325,13 +325,8 @@ class Path:
             surface_data = surface.at_point(point[0], point[1])
             z_component = (1 - surface_data.z) * thickness_parameters.z
             diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
-            try:
-                # curvature_component = self._curvatures[i] * thickness_parameters.curvature
-                curvature_component = 0  # TODO: Fix.
-            except (IndexError, TypeError):
-                curvature_component = 0
 
-            thickness = constant_component + z_component + diffdir_component + curvature_component
+            thickness = constant_component + z_component + diffdir_component
             offsets.append(thickness)
 
         offsets = tuple(offsets)
@@ -377,6 +372,9 @@ class Curve1D:
                                         thickness_parameters=thickness_parameters)
         offset_vector = hifi_path.offset_vector
 
+        # This does not change, so get the factor here rather than in the nested loop.
+        streamline_curvature_factor = thickness_parameters.streamline_curvature
+
         logger.debug("Starting offset...")
         svg_path = svgp.parse_path(self.d)
         for i, segment in enumerate(svg_path):
@@ -406,6 +404,10 @@ class Curve1D:
                 surface_point = hifi_path.nearest_neighbour(interval_point)
                 surface_idx = hifi_path.points.index(surface_point)
                 thickness = offset_vector[surface_idx]
+
+                if streamline_curvature_factor:
+                    curvature = segment.curvature(step)
+                    thickness += streamline_curvature_factor * curvature
 
                 # Compute offset coordinates for each side (a and b) of the t-step.
                 normal = segment.normal(step)

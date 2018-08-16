@@ -50,16 +50,12 @@ class Silhouette:
 
         contours = measure.find_contours(self.surface.obj_image, 0.99)
 
-        # Only a single contour is expected since the object image is well-defined.
-        # TODO: This is not true for hyperbolic paraboloid! Need to consider this assumption...
-        try:
-            contours = contours[0]
-        except IndexError:
-            logger.warning("No silhouette Paths could be found!")
-            return
+        # find_contours may return more than one contour set. The "correct" contour is generally the longest path in
+        # the set.
+        contour = max(contours, key=len)
 
         # Create the initial Path.
-        path = Path([[coord[1], coord[0]] for coord in contours])
+        path = Path([[coord[1], coord[0]] for coord in contour])
 
         # Initial Path must be split into multiple Paths if corners are present.
         corners = path.find_corners(self.surface.obj_image, self.settings.harris_min_distance,
@@ -74,14 +70,8 @@ class Silhouette:
         logger.info("Silhouette Paths found: %d", len(self.paths))
 
         for path in self.paths:
-            # TODO: Roll into settings.
-            cull_factor = self.settings.cull_factor
-            optimise_factor = self.settings.optimise_factor
-            hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(cull_factor)
-            fit_path = hifi_path.optimise(optimise_factor)
-
-            # # TODO: Have an entry for this in settings.
-            # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
+            hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(self.settings.cull_factor)
+            fit_path = hifi_path.optimise(self.settings.optimise_factor)
 
             if len(path.points) < 2:
                 logger.debug("Silhouette path of length %d ignored.", len(path.points))
@@ -242,20 +232,11 @@ class Streamline:
             for path in paths:
                 logger.debug("UV contour split into %d paths.", len(paths))
 
-                num_points = len(path.points)
-                # if num_points > 10:
-                #     logger.debug("Streamline length: %d", num_points)
-                # path.compute_curvatures(self.norm_image_component, self.surface)
+                hifi_path = path.simple_cull(self.settings.cull_factor)
+                fit_path = hifi_path.optimise(self.settings.optimise_factor)
 
-                # TODO: Have an entry for this in settings.
-                # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
-
-                cull_factor = self.settings.cull_factor
-                optimise_factor = self.settings.optimise_factor
-                hifi_path = path.simple_cull(cull_factor)
-                fit_path = hifi_path.optimise(optimise_factor)
-
-                if len(fit_path.points) > 1:
+                num_points = len(fit_path.points)
+                if num_points > 1:
 
                     # Store to allow plotting of construction points for debugging.
                     self.paths.append(fit_path)
