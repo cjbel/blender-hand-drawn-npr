@@ -51,7 +51,7 @@ class Path:
             # Input coordinates are given in terms of (row, column), so swap to (x, y).
             self.__points = tuple((point[1], point[0]) for point in points)
 
-        self._thicknesses = None
+        self.__offset_vector = None
         self._curvatures = None
 
     @property
@@ -61,6 +61,10 @@ class Path:
     @property
     def points_as_rc(self):
         return tuple(((point[1], point[0]) for point in self.__points))
+
+    @property
+    def offset_vector(self):
+        return self.__offset_vector
 
     def round(self):
         """
@@ -314,21 +318,41 @@ class Path:
     #
     # self._thicknesses = tuple(thicknesses)
 
+    def compute_offset_vector(self, surface, thickness_parameters):
+        offsets = []
+        for i, point in enumerate(self.points):
+            constant_component = thickness_parameters.const
+            surface_data = surface.at_point(point[0], point[1])
+            z_component = (1 - surface_data.z) * thickness_parameters.z
+            diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
+            try:
+                # curvature_component = self._curvatures[i] * thickness_parameters.curvature
+                curvature_component = 0  # TODO: Fix.
+            except (IndexError, TypeError):
+                curvature_component = 0
+
+            thickness = constant_component + z_component + diffdir_component + curvature_component
+            offsets.append(thickness)
+
+        offsets = tuple(offsets)
+        logger.debug("Offset vector: %s", offsets)
+
+        self.__offset_vector = tuple(offsets)
+
 
 class Curve1D:
     """
     A Curve1D object represents a composite Bezier curve which approximates a Path.
     """
 
-    def __init__(self, path, fit_error):
-        self.path = path
-        self.fit_error = fit_error
+    def __init__(self, fit_path, settings):
+        self.fit_path = fit_path
+        self.fit_error = settings.curve_fit_error
 
         self.d = None
         self.d_c = None
         self.d_m = None
 
-        self.__path_offset_vector = []
         self.__interval_points = []
         self.__offset_points = []
 
@@ -353,7 +377,7 @@ class Curve1D:
         # else:
         #     points = np.array(path.points)
 
-        self.d = pf.pathtosvg((pf.fitpath(self.path.points, self.fit_error)))
+        self.d = pf.pathtosvg((pf.fitpath(self.fit_path.points, self.fit_error)))
 
         # Split the initial move-to from the remainder of the string.
         curve_start_index = self.d.index("C")
@@ -365,32 +389,9 @@ class Curve1D:
     #     self.__path_fit(path=self.path, fit_error=self.fit_error, optimise=True,
     #                     optimisation_factor=self.optimisation_factor)
 
-    # TODO: *************** Surely this needs to happen on an unoptimised path! *******************************
-    def __compute_offset_vector(self, surface, thickness_parameters):
-        offsets = []
-        for i, point in enumerate(self.path.points):
-            constant_component = thickness_parameters.const
-            surface_data = surface.at_point(point[0], point[1])
-            z_component = (1 - surface_data.z) * thickness_parameters.z
-            diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
-            try:
-                # curvature_component = self._curvatures[i] * thickness_parameters.curvature
-                curvature_component = 0  # TODO: Fix.
-            except (IndexError, TypeError):
-                curvature_component = 0
-
-            thickness = constant_component + z_component + diffdir_component + curvature_component
-            offsets.append(thickness)
-
-        self.__path_offset_vector = tuple(offsets)
-        logger.debug("Offset vector: %s", self.__path_offset_vector)
-
-    def offset(self, interval, surface, thickness_parameters, positive_direction=True):
+    def offset(self, interval, hifi_path, offset_vector, positive_direction=True):
 
         self.__offset_points = []
-        self.__path_offset_vector = []
-
-        self.__compute_offset_vector(surface=surface, thickness_parameters=thickness_parameters)
 
         logger.debug("Starting offset...")
         for i, segment in enumerate(svgp.parse_path(self.d)):
@@ -416,9 +417,9 @@ class Curve1D:
                 # Sometimes the point will be off the surface due to errors in curve fit. Perform nearest
                 # neighbour to get valid surface attributes, but keep the point coordinates.
                 # TODO: Shouldnt there be a validity check before calling this to avoid unnecessary calls?
-                surface_point = self.path.nearest_neighbour(interval_point)
-                surface_idx = self.path.points.index(surface_point)
-                thickness = self.__path_offset_vector[surface_idx]
+                surface_point = hifi_path.nearest_neighbour(interval_point)
+                surface_idx = hifi_path.points.index(surface_point)
+                thickness = offset_vector[surface_idx]
 
                 # Compute offset coordinates for each side (a and b) of the t-step.
                 normal = segment.normal(step)
