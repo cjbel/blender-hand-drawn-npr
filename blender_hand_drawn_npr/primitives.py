@@ -27,7 +27,8 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "silhouette_thickness_parameters",
                                    "streamline_thickness_parameters",
                                    "uv_primary_trim_size",
-                                   "uv_secondary_trim_size"])
+                                   "uv_secondary_trim_size",
+                                   "stroke_penalty"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -479,3 +480,11 @@ class Stroke:
         self.d = p.attribs['d']
 
         # logger.debug("Generate complete.")
+
+
+class Stipple:
+    """
+    A Stipple is a single circular stroke.
+    """
+
+    pass

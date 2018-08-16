@@ -33,6 +33,8 @@ class Surface:
         logger.info("Z image loaded: %s", file_path)
 
     def init_diffdir_image(self, file_path):
+        # # 16-bit colour-depth, use imageio.
+        # self.diffdir_image = imageio.imread(file_path, as_gray=True)
         self.diffdir_image = io.imread(file_path, as_gray=True)
         logger.info("Diffdir image loaded: %s", file_path)
 

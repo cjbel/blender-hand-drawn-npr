@@ -3,7 +3,7 @@ import os
 
 import svgwrite
 
-from blender_hand_drawn_npr.elements import Silhouette, Streamlines
+from blender_hand_drawn_npr.elements import Silhouette, Streamlines, Stipples
 from blender_hand_drawn_npr.models import Surface
 from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters
 
@@ -30,7 +30,8 @@ class Illustrator:
                                  streamline_thickness_parameters=ThicknessParameters(const=0, z=0.1, diffdir=0,
                                                                                      stroke_curvature=50),
                                  uv_primary_trim_size=200,
-                                 uv_secondary_trim_size=20)
+                                 uv_secondary_trim_size=20,
+                                 stroke_penalty=5)
 
         # # Bump plane, 1D curvature.
         # self.settings = Settings(cull_factor=50,
@@ -83,6 +84,10 @@ class Illustrator:
         streamlines = Streamlines(surface=self.surface, settings=self.settings)
         streamlines.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
+
+        stipples = Stipples(surface=self.surface, settings=self.settings)
+        stipples.generate()
+        [self.illustration.add(svg_stroke) for svg_stroke in stipples.svg_strokes]
 
     def save(self):
         self.illustration.save()

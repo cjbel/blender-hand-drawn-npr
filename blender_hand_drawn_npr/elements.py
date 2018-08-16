@@ -1,9 +1,11 @@
 import logging
 
 import svgwrite
-from skimage import measure
+from skimage import measure, util
+import numpy as np
 
 from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
+from blender_hand_drawn_npr.variable_density import moving_front_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +252,69 @@ class Streamline:
                     self.strokes.append(stroke)
                 else:
                     logger.debug("Streamline of length %d rejected", num_points)
+
+
+class Stipples:
+    """
+    Stipples are a collection of SVG Stipple strokes.
+    """
+
+    def __init__(self, surface, settings):
+        self.settings = settings
+        self.surface = surface
+
+        self.reference_image = util.invert(surface.diffdir_image)
+        # self.reference_image = surface.diffdir_image
+        self.mask_image = surface.obj_image
+        self.stroke_penalty = settings.stroke_penalty
+        self.svg_strokes = []
+
+    def density_function(self, x, y):
+        # return np.maximum(0.001, (self.reference_image[int(round(y)), int(round(x))]) * 0.005)
+        # return np.maximum(0.002, (self.reference_image[int(round(y)), int(round(x))]) * 0.005)
+        return np.maximum(0.0008, (self.reference_image[int(round(y)), int(round(x))]) * 0.003)
+        # return np.maximum(0.008, (self.reference_image[int(round(y)), int(round(x))] * 1.5) * 0.03)
+        # return np.maximum(0.005, (self.reference_image[int(round(y)), int(round(x))] * 4) * 0.5)
+
+    def generate(self):
+        y_res, x_res = self.reference_image.shape
+
+        logger.debug("Computing Stipple nodes...")
+        nodes = moving_front_nodes(self.density_function, (0, 0, x_res - 1, y_res - 1))
+
+        logger.debug("Clipping Stipple nodes...")
+        nodes = np.round(nodes)
+        image = np.zeros_like(self.reference_image)
+        for node in nodes:
+            image[int(node[1]), int(node[0])] = 1
+        mask = self.surface.obj_image == 1
+        image[util.invert(mask)] = 0
+        nodes = np.argwhere(image)
+
+        for node in nodes:
+            self.svg_strokes.append(svgwrite.shapes.Circle((str(node[1]), str(node[0])), r=1, fill="black"))
+        logger.debug("Stipples created: %d", len(nodes))
+
+        # from skimage import io
+        # io.imsave("/tmp/out.png", image)
+        # io.imshow(self.reference_image)
+        # io.show()
+        #
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(14, 8))
+        ax1 = fig.add_subplot(1, 1, 1)
+        plt.rc('figure', figsize=(12.0, 12.0))
+
+        # node layout
+        ax1.plot(nodes[:, 0], nodes[:, 1], '.', markersize=1)
+        ax1.axis("image")
+        ax1.set_xlim(0, x_res)
+        ax1.set_ylim(0, y_res)
+        ax1.set_title("Node density")
+        # ax1.invert_xaxis()
+        ax1.invert_yaxis()
+
+        plt.show()
 
 
 if __name__ == "__main__":
