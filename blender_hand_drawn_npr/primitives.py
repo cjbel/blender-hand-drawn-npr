@@ -156,14 +156,15 @@ class Path:
                 # Need to find another pixel nearby which is valid. Due to the nature of find_contours, a pixel
                 # with valid attributes will be found within 1 pixel of the original. So first, identify translations
                 # required to shift pixel position by 1 pixel in each direction.
-                pixel_translations = [[0, -1],  # N
-                                      [0, 1],  # S
-                                      [1, 0],  # E
-                                      [-1, 0],  # W
-                                      [1, -1],  # NE
-                                      [1, 1],  # SE
-                                      [-1, 1],  # SW
-                                      [-1, -1]]  # NW
+                step = 1
+                pixel_translations = [[0, -step],  # N
+                                      [0, step],  # S
+                                      [step, 0],  # E
+                                      [-step, 0],  # W
+                                      [step, -step],  # NE
+                                      [step, step],  # SE
+                                      [-step, step],  # SW
+                                      [-step, -step]]  # NW
 
                 # Now evaluate the surface attributes of each neighbour.
                 for j, pixel_translation in enumerate(pixel_translations):
@@ -364,6 +365,7 @@ class Curve1D:
     #     self.__path_fit(path=self.path, fit_error=self.fit_error, optimise=True,
     #                     optimisation_factor=self.optimisation_factor)
 
+    # TODO: *************** Surely this needs to happen on an unoptimised path! *******************************
     def __compute_offset_vector(self, surface, thickness_parameters):
         offsets = []
         for i, point in enumerate(self.path.points):
@@ -381,6 +383,7 @@ class Curve1D:
             offsets.append(thickness)
 
         self.__path_offset_vector = tuple(offsets)
+        logger.debug("Offset vector: %s", self.__path_offset_vector)
 
     def offset(self, interval, surface, thickness_parameters, positive_direction=True):
 

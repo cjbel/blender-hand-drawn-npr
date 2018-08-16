@@ -48,6 +48,7 @@ class Silhouette:
         contours = measure.find_contours(self.surface.obj_image, 0.99)
 
         # Only a single contour is expected since the object image is well-defined.
+        # TODO: This is not true for hyperbolic paraboloid! Need to consider this assumption...
         try:
             contours = contours[0]
         except IndexError:
@@ -78,6 +79,11 @@ class Silhouette:
             # # TODO: Have an entry for this in settings.
             # path.compute_thicknesses(self.surface, self.settings.thickness_parameters)
 
+            if len(path.points) < 2:
+                logger.debug("Silhouette path of length %d ignored.", len(path.points))
+                continue
+
+            logger.debug("Creating Silhouette stroke...")
             stroke = create_stroke(path=path, surface=self.surface,
                                    thickness_parameters=self.settings.silhouette_thickness_parameters,
                                    settings=self.settings)
@@ -192,7 +198,6 @@ class Streamlines:
 
             # for point in stroke.upper_curve.path.points:
             #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
-
 
         logger.info("Streamline Strokes prepared: %d", len(self.svg_strokes))
 
