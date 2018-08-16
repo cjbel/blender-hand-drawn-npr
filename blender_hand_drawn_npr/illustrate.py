@@ -26,9 +26,9 @@ class Illustrator:
                                  stroke_colour="black",
                                  streamline_segments=32,
                                  silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
-                                                                                     streamline_curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=0, diffdir=0,
-                                                                                     streamline_curvature=50),
+                                                                                     stroke_curvature=0),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=0.1, diffdir=0,
+                                                                                     stroke_curvature=50),
                                  uv_primary_trim_size=200,
                                  uv_secondary_trim_size=20)
 

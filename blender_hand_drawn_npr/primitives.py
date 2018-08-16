@@ -32,7 +32,7 @@ Settings = namedtuple("Settings", ["cull_factor",
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
                                                          "diffdir",
-                                                         "streamline_curvature"])
+                                                         "stroke_curvature"])
 
 
 class Path:
@@ -372,8 +372,8 @@ class Curve1D:
                                         thickness_parameters=thickness_parameters)
         offset_vector = hifi_path.offset_vector
 
-        # This does not change, so get the factor here rather than in the nested loop.
-        streamline_curvature_factor = thickness_parameters.streamline_curvature
+        # This does not change, so get the factor here rather than in the nested loop down below.
+        stroke_curvature_factor = thickness_parameters.stroke_curvature
 
         logger.debug("Starting offset...")
         svg_path = svgp.parse_path(self.d)
@@ -405,9 +405,9 @@ class Curve1D:
                 surface_idx = hifi_path.points.index(surface_point)
                 thickness = offset_vector[surface_idx]
 
-                if streamline_curvature_factor:
+                if stroke_curvature_factor:
                     curvature = segment.curvature(step)
-                    thickness += streamline_curvature_factor * curvature
+                    thickness += stroke_curvature_factor * curvature
 
                 # Compute offset coordinates for each side (a and b) of the t-step.
                 normal = segment.normal(step)
