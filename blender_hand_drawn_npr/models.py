@@ -12,7 +12,7 @@ class Surface:
 
     def __init__(self, obj_image=None, z_image=None, diffdir_image=None,
                  norm_x_image=None, norm_y_image=None, norm_z_image=None,
-                 u_image=None, v_image=None):
+                 u_image=None, v_image=None, shadow_image=None, ao_image=None):
         self.obj_image = obj_image
         self.z_image = z_image
         self.diffdir_image = diffdir_image
@@ -21,6 +21,8 @@ class Surface:
         self.norm_z_image = norm_z_image
         self.u_image = u_image
         self.v_image = v_image
+        self.shadow_image = shadow_image
+        self.ao_image = ao_image
 
         self.SurfaceData = namedtuple("SurfaceData", "obj z diffdir norm_x norm_y norm_z u v")
 
@@ -63,6 +65,14 @@ class Surface:
         self.v_image = uv_image[:, :, 1]
 
         logger.info("UV image loaded: %s", file_path)
+
+    def init_shadow_image(self, file_path):
+        self.shadow_image = io.imread(file_path, as_gray=True)
+        logger.info("Shadow image loaded: %s", file_path)
+
+    def init_ao_image(self, file_path):
+        self.ao_image = io.imread(file_path, as_gray=True)
+        logger.info("AO image loaded: %s", file_path)
 
     def at_point(self, x, y):
         assert x >= 0

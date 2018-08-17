@@ -28,12 +28,18 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "streamline_thickness_parameters",
                                    "uv_primary_trim_size",
                                    "uv_secondary_trim_size",
-                                   "stroke_penalty"])
+                                   "stroke_penalty",
+                                   "lighting_parameters"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
                                                          "diffdir",
                                                          "stroke_curvature"])
+
+LightingParameters = namedtuple("LightingParameters", ["diffdir",
+                                                       "shadow",
+                                                       "ao",
+                                                       "threshold"])
 
 
 class Path:
@@ -487,4 +493,128 @@ class Stipple:
     A Stipple is a single circular stroke.
     """
 
-    pass
+    def __init__(self, length, r0, r1, p0, heading):
+        self.length = length
+        self.r0 = r0
+        self.r1 = r1
+        self.p0 = p0
+        self.heading = heading
+
+        self.d = None
+
+        self.__generate()
+
+    def __translate(self, vertices, x, y):
+        """
+        Translate a list of vertices by x, y.
+
+        Ref:
+        https://www.mathplanet.com/education/geometry/transformations/transformation-using-matrices
+
+        :param vertices: List of vertices to be transformed (u, v).
+        :param x: x-delta.
+        :param y: y-delta.
+        :return: Transformed list of vertices (u, v).
+        """
+        logger.debug("Vertices pre-translation: %s", vertices.tolist())
+
+        # Unpack provided vertices into matrix form.
+        v = np.matrix([[v[0] for v in vertices],
+                       [v[1] for v in vertices]])
+
+        # Define translation matrix.
+        t = np.matrix([[x],
+                       [y]])
+
+        # Perform the transform.
+        transform = v + t
+
+        # Transpose the result to attain the same format as the original function argument.
+        vertices = np.array(transform.T)
+        logger.debug("Vertices post-translation: %s", vertices.tolist())
+
+        return vertices
+
+    def __rotate_about_xy(self, vertices, x, y, angle):
+        """
+        Rotate a list of vertices about center x, y.
+
+        Ref:
+        https://www.mathplanet.com/education/geometry/transformations/transformation-using-matrices
+        https://stackoverflow.com/questions/9389453/rotation-matrix-with-center
+        https://math.stackexchange.com/questions/2093314/rotation-matrix-and-of-rotation-around-a-point
+
+        :param vertices: List of vertices to be transformed (u, v).
+        :param x: x-coordinate of center of rotation.
+        :param y: y-coordinate of center of rotation.
+        :param angle: Angle of rotation from the horizontal (x+).
+        :return: Transformed list of vertices (u, v).
+        """
+        logger.debug("Vertices pre-rotation: %s", vertices.tolist())
+
+        # Define translation matrices.
+        t_1 = np.matrix([[1, 0, x],
+                         [0, 1, y],
+                         [0, 0, 1]])
+        t_2 = np.matrix([[1, 0, -x],
+                         [0, 1, -y],
+                         [0, 0, 1]])
+
+        # Define rotation matrix.
+        theta = np.radians(angle)
+        r = np.matrix([[np.cos(theta), -np.sin(theta), 0],
+                       [np.sin(theta), np.cos(theta), 0],
+                       [0, 0, 1]])
+
+        # Unpack provided vertices into matrix form.
+        v = np.matrix([[v[0] for v in vertices],
+                       [v[1] for v in vertices],
+                       [1] * len(vertices)])
+
+        # Perform the transform.
+        transform = t_1 * r * t_2 * v
+
+        # The last row does not contain useful data, so discard it.
+        transform = transform[:-1]
+
+        # Transpose the result to attain the same format as the original function argument.
+        vertices = np.array(transform.T)
+        logger.debug("Vertices post-rotation: %s", vertices.tolist())
+
+        return vertices
+
+    def __generate(self):
+        logger.debug("Starting generate...")
+
+        # Define the parameterised stroke outline.
+
+        # With the center of the leftmost end-cap taken as (0, 0), a 2D straight stroke with rounded ends can be
+        # modelled as four vertices as follows.
+        vertices = np.array([[0, self.r0],
+                             [self.length, self.r1],
+                             [self.length, -self.r1],
+                             [0, -self.r0]])
+
+        # Translate to p0.
+        vertices = self.__translate(vertices, self.p0[0], self.p0[1])
+
+        # Rotate around p0 to achieve final position.
+        vertices = self.__rotate_about_xy(vertices, self.p0[0], self.p0[1], self.heading)
+
+        p = svgwrite.path.Path()
+
+        # Create the SVG path.
+        # Top edge.
+        p.push('M', vertices[0][0], vertices[0][1])
+        p.push('L', vertices[1][0], vertices[1][1])
+        # Rightmost endcap.
+        p.push('A', self.r1, self.r1, 0, 0, 0, vertices[2][0], vertices[2][1])
+        # Bottom edge.
+        p.push('L', vertices[3][0], vertices[3][1])
+        # Leftmost endcap.
+        p.push('A', self.r0, self.r0, 0, 0, 0, vertices[0][0], vertices[0][1])
+        p.push('Z')
+
+        # Call to either tostring or to_xml() is needed to create the dict 'd' attribute.
+        p.tostring()
+        self.d = p.attribs['d']

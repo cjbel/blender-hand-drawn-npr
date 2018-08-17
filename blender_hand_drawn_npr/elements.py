@@ -1,10 +1,13 @@
 import logging
 
 import svgwrite
-from skimage import measure, util
+from skimage import measure, util, img_as_float, filters
 import numpy as np
+from statistics import mode, median, mean
+from scipy import stats
+import math
 
-from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke
+from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke, Stipple
 from blender_hand_drawn_npr.variable_density import moving_front_nodes
 
 logger = logging.getLogger(__name__)
@@ -263,55 +266,135 @@ class Stipples:
         self.settings = settings
         self.surface = surface
 
-        self.reference_image = util.invert(surface.diffdir_image)
-        # self.reference_image = surface.diffdir_image
-        self.mask_image = surface.obj_image
-        self.stroke_penalty = settings.stroke_penalty
+        self.reference_image = None
+        self.reference_stats = None
         self.svg_strokes = []
 
     def density_function(self, x, y):
-        # return np.maximum(0.001, (self.reference_image[int(round(y)), int(round(x))]) * 0.005)
-        # return np.maximum(0.002, (self.reference_image[int(round(y)), int(round(x))]) * 0.005)
-        return np.maximum(0.0008, (self.reference_image[int(round(y)), int(round(x))]) * 0.003)
-        # return np.maximum(0.008, (self.reference_image[int(round(y)), int(round(x))] * 1.5) * 0.03)
-        # return np.maximum(0.005, (self.reference_image[int(round(y)), int(round(x))] * 4) * 0.5)
+        return np.maximum(0.002, (self.reference_image[int(round(y)), int(round(x))]) * 0.01)
+
+    def __prepare_reference(self):
+        from skimage import io
+        # Prepare component images, where areas of high intensity will correspond to areas of dense stroke placement.
+        shadow = util.invert(self.surface.shadow_image)
+        ao = util.invert(self.surface.ao_image)
+        diff = util.invert(self.surface.diffdir_image)
+
+        # Combine the images according to desired weights.
+        combined = (self.settings.lighting_parameters.shadow * shadow) + \
+                   (self.settings.lighting_parameters.ao * ao) + \
+                   (self.settings.lighting_parameters.diffdir * diff)
+
+        # Make areas outside the object boundary zero intensity to avoid unnecessary stroke placement here. These
+        # strokes will later be discarded, but generating them in the first place leads to reduced performance.
+        mask = self.surface.obj_image == 0
+        combined[mask] = 0
+        io.imshow(combined)
+        io.show()
+
+        self.reference_image = combined
+        # Compute the mean of intensities which lie within the object boundary.
+        self.reference_stats = stats.describe(combined[util.invert(mask)])
 
     def generate(self):
-        y_res, x_res = self.reference_image.shape
+        self.__prepare_reference()
 
         logger.debug("Computing Stipple nodes...")
+        y_res, x_res = self.reference_image.shape
         nodes = moving_front_nodes(self.density_function, (0, 0, x_res - 1, y_res - 1))
 
-        logger.debug("Clipping Stipple nodes...")
+        # Nodes coords will be used as image index coords, so must be rounded.
         nodes = np.round(nodes)
+
+        threshold = self.settings.lighting_parameters.threshold * (self.reference_stats.minmax[1] -
+                                                                   self.reference_stats.minmax[0])
+        # Place a marker at each node location in image-space.
         image = np.zeros_like(self.reference_image)
         for node in nodes:
-            image[int(node[1]), int(node[0])] = 1
+            coordinate = (int(node[1]), int(node[0]))
+            if self.reference_image[coordinate] > threshold:
+                image[coordinate] = 1
+
+        # Clip all stipples placed outside of the object boundary.
         mask = self.surface.obj_image == 1
         image[util.invert(mask)] = 0
+
+        # Extract the list of node coordinates from the image.
         nodes = np.argwhere(image)
 
-        for node in nodes:
-            self.svg_strokes.append(svgwrite.shapes.Circle((str(node[1]), str(node[0])), r=1, fill="black"))
-        logger.debug("Stipples created: %d", len(nodes))
+        u_image = self.surface.u_image
+        v_image = self.surface.v_image
 
-        # from skimage import io
-        # io.imsave("/tmp/out.png", image)
-        # io.imshow(self.reference_image)
-        # io.show()
+        length = 5  # TODO: Make user-configurable.
+        head_radius = 1  # TODO: Make user-configurable.
+        tail_radius = 0.1  # TODO: Make user-configurable.
+
+        # Remember node coordinates remain in row, column format here.
+        for node in nodes:
+            target = u_image[node[0], node[1]]
+            from skimage import draw
+            rr, cc = draw.circle_perimeter(r=node[0], c=node[1], radius=4)
+            errors = {}
+            for i in range(0, len(rr)):
+                candidate_v = v_image[rr[i], cc[i]]
+                # Select only for secondary coordinate values above the current value.
+                if candidate_v > v_image[node[0], node[1]]:
+                    candidate_u = u_image[rr[i], cc[i]]
+                    # Compute error, cast to Python int required to avoid issues with numpy uint16 overflow.
+                    error = abs(target.item() - candidate_u.item())
+                    errors[rr[i], cc[i]] = error
+
+            # There may be multiple minimums, but it's good enough to settle for the first that's encountered.
+            try:
+                tail = min(errors, key=errors.get)
+            except ValueError:
+                # Occurs if the node is off the image surface, just ignore this point if so.
+                continue
+
+            # Compute x and y deltas between node and tail.
+            x_delta = tail[1] - node[1]
+            y_delta = tail[0] - node[0]
+
+            # Angle between these points.
+            heading = math.degrees(math.atan2(y_delta, x_delta))
+
+            stipple = Stipple(length=length, r0=head_radius, r1=tail_radius, p0=(node[1], node[0]), heading=heading)
+            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+            svg_stroke.push(stipple.d)
+            self.svg_strokes.append(svg_stroke)
+
+
+        # logger.debug("Creating Stipple strokes...")
+
+
+        # stipple = Stipple(length=length, r0=head_radius, r1=tail_radius, p0=point, heading=heading)
+        # svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+        # svg_stroke.push(stroke.d)
+        # self.svg_strokes.append(svg_stroke)
+
+        # for node in nodes:
+        #     self.svg_strokes.append(svgwrite.shapes.Circle((str(node[1]), str(node[0])), r=1, fill="black"))
+        # logger.debug("Stipples created: %d", len(nodes))
         #
+        # for tail in tails:
+        #     self.svg_strokes.append(svgwrite.shapes.Circle((str(tail[1]), str(tail[0])), r=0.5, fill="red"))
+        # logger.debug("Stipples created: %d", len(nodes))
+        # # from skimage import io
+        # # io.imsave("/tmp/out.png", image)
+        # # io.imshow(self.reference_image)
+        # # io.show()
+
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(14, 8))
         ax1 = fig.add_subplot(1, 1, 1)
         plt.rc('figure', figsize=(12.0, 12.0))
 
         # node layout
-        ax1.plot(nodes[:, 0], nodes[:, 1], '.', markersize=1)
+        ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
         ax1.axis("image")
         ax1.set_xlim(0, x_res)
         ax1.set_ylim(0, y_res)
-        ax1.set_title("Node density")
-        # ax1.invert_xaxis()
+        ax1.set_title("Threshold: " + str(threshold))
         ax1.invert_yaxis()
 
         plt.show()

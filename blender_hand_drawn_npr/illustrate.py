@@ -5,7 +5,7 @@ import svgwrite
 
 from blender_hand_drawn_npr.elements import Silhouette, Streamlines, Stipples
 from blender_hand_drawn_npr.models import Surface
-from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters
+from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters, LightingParameters
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,9 @@ class Illustrator:
                                                                                      stroke_curvature=50),
                                  uv_primary_trim_size=200,
                                  uv_secondary_trim_size=20,
-                                 stroke_penalty=5)
+                                 stroke_penalty=5,
+                                 lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=0,
+                                                                        threshold=0.4))
 
         # # Bump plane, 1D curvature.
         # self.settings = Settings(cull_factor=50,
@@ -71,6 +73,8 @@ class Illustrator:
         self.surface.init_diffdir_image(os.path.join(self.img_dir, "DiffDir0001.png"))
         self.surface.init_norm_image(os.path.join(self.img_dir, "Normal0001.tif"))
         self.surface.init_uv_image(os.path.join(self.img_dir, "UV0001.tif"))
+        self.surface.init_shadow_image(os.path.join(self.img_dir, "Shadow0001.png"))
+        self.surface.init_ao_image(os.path.join(self.img_dir, "AO0001.png"))
 
         illustration_dimensions = (self.surface.obj_image.shape[1],
                                    self.surface.obj_image.shape[0])
