@@ -33,7 +33,7 @@ class Illustrator:
                                  uv_secondary_trim_size=20,
                                  stroke_penalty=5,
                                  lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=0,
-                                                                        threshold=0.4))
+                                                                        threshold=0.3))
 
         # # Bump plane, 1D curvature.
         # self.settings = Settings(cull_factor=50,

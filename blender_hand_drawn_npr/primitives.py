@@ -438,7 +438,7 @@ class Curve1D:
         return Path(self.__offset_points)
 
 
-class Stroke:
+class CurvedStroke:
     def __init__(self, upper_curve, lower_curve):
         self.upper_curve = upper_curve
         self.lower_curve = lower_curve
@@ -488,9 +488,9 @@ class Stroke:
         # logger.debug("Generate complete.")
 
 
-class Stipple:
+class DirectionalStippleStroke:
     """
-    A Stipple is a single circular stroke.
+    A DirectionalStippleStroke a stipple with a tail.
     """
 
     def __init__(self, length, r0, r1, p0, heading):
@@ -516,8 +516,6 @@ class Stipple:
         :param y: y-delta.
         :return: Transformed list of vertices (u, v).
         """
-        logger.debug("Vertices pre-translation: %s", vertices.tolist())
-
         # Unpack provided vertices into matrix form.
         v = np.matrix([[v[0] for v in vertices],
                        [v[1] for v in vertices]])
@@ -531,7 +529,6 @@ class Stipple:
 
         # Transpose the result to attain the same format as the original function argument.
         vertices = np.array(transform.T)
-        logger.debug("Vertices post-translation: %s", vertices.tolist())
 
         return vertices
 
@@ -550,8 +547,6 @@ class Stipple:
         :param angle: Angle of rotation from the horizontal (x+).
         :return: Transformed list of vertices (u, v).
         """
-        logger.debug("Vertices pre-rotation: %s", vertices.tolist())
-
         # Define translation matrices.
         t_1 = np.matrix([[1, 0, x],
                          [0, 1, y],
@@ -579,7 +574,6 @@ class Stipple:
 
         # Transpose the result to attain the same format as the original function argument.
         vertices = np.array(transform.T)
-        logger.debug("Vertices post-rotation: %s", vertices.tolist())
 
         return vertices
 

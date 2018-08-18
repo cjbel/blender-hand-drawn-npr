@@ -1,19 +1,18 @@
 import logging
-
-import svgwrite
-from skimage import measure, util, img_as_float, filters
-import numpy as np
-from statistics import mode, median, mean
-from scipy import stats
 import math
 
-from blender_hand_drawn_npr.primitives import Path, Curve1D, Stroke, Stipple
+import numpy as np
+import svgwrite
+from scipy import stats
+from skimage import measure, util
+
+from blender_hand_drawn_npr.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
 from blender_hand_drawn_npr.variable_density import moving_front_nodes
 
 logger = logging.getLogger(__name__)
 
 
-def create_stroke(fit_path, hifi_path, thickness_parameters, surface, settings):
+def create_curved_stroke(fit_path, hifi_path, thickness_parameters, surface, settings):
     logger.debug("Creating stroke with %d points...", len(fit_path.points))
 
     construction_curve = Curve1D(fit_path=fit_path, settings=settings)
@@ -33,7 +32,7 @@ def create_stroke(fit_path, hifi_path, thickness_parameters, surface, settings):
                                            positive_direction=False)
     lower_curve = Curve1D(fit_path=lower_path, settings=settings)
 
-    return Stroke(upper_curve=upper_curve, lower_curve=lower_curve)
+    return CurvedStroke(upper_curve=upper_curve, lower_curve=lower_curve)
 
 
 class Silhouette:
@@ -83,11 +82,11 @@ class Silhouette:
                 continue
 
             logger.debug("Creating Silhouette stroke...")
-            stroke = create_stroke(fit_path=fit_path,
-                                   hifi_path=hifi_path,
-                                   thickness_parameters=self.settings.silhouette_thickness_parameters,
-                                   surface=self.surface,
-                                   settings=self.settings)
+            stroke = create_curved_stroke(fit_path=fit_path,
+                                          hifi_path=hifi_path,
+                                          thickness_parameters=self.settings.silhouette_thickness_parameters,
+                                          surface=self.surface,
+                                          settings=self.settings)
             svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stroke.d)
             self.svg_strokes.append(svg_stroke)
@@ -246,11 +245,11 @@ class Streamline:
                     # Store to allow plotting of construction points for debugging.
                     self.paths.append(fit_path)
 
-                    stroke = create_stroke(fit_path=fit_path,
-                                           hifi_path=hifi_path,
-                                           thickness_parameters=self.settings.streamline_thickness_parameters,
-                                           surface=self.surface,
-                                           settings=self.settings)
+                    stroke = create_curved_stroke(fit_path=fit_path,
+                                                  hifi_path=hifi_path,
+                                                  thickness_parameters=self.settings.streamline_thickness_parameters,
+                                                  surface=self.surface,
+                                                  settings=self.settings)
 
                     self.strokes.append(stroke)
                 else:
@@ -325,15 +324,18 @@ class Stipples:
         u_image = self.surface.u_image
         v_image = self.surface.v_image
 
-        length = 5  # TODO: Make user-configurable.
-        head_radius = 1  # TODO: Make user-configurable.
-        tail_radius = 0.1  # TODO: Make user-configurable.
+        length = 50  # TODO: Make user-configurable.
+        head_radius = 0.8  # TODO: Make user-configurable.
+        tail_radius = 0  # TODO: Make user-configurable.
 
         # Remember node coordinates remain in row, column format here.
         for node in nodes:
             target = u_image[node[0], node[1]]
             from skimage import draw
-            rr, cc = draw.circle_perimeter(r=node[0], c=node[1], radius=4)
+            # Search radius for suitable uv coordinate. The radius value limits the available stroke orientations, so
+            # consider making this proportional to the stroke length - longer strokes will require more accurate
+            # orientations, but this comes with a performance penalty.
+            rr, cc = draw.circle_perimeter(r=node[0], c=node[1], radius=10)
             errors = {}
             for i in range(0, len(rr)):
                 candidate_v = v_image[rr[i], cc[i]]
@@ -358,31 +360,13 @@ class Stipples:
             # Angle between these points.
             heading = math.degrees(math.atan2(y_delta, x_delta))
 
-            stipple = Stipple(length=length, r0=head_radius, r1=tail_radius, p0=(node[1], node[0]), heading=heading)
+            stipple = DirectionalStippleStroke(length=length, r0=head_radius, r1=tail_radius, p0=(node[1], node[0]),
+                                               heading=heading)
             svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stipple.d)
             self.svg_strokes.append(svg_stroke)
 
-
         # logger.debug("Creating Stipple strokes...")
-
-
-        # stipple = Stipple(length=length, r0=head_radius, r1=tail_radius, p0=point, heading=heading)
-        # svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
-        # svg_stroke.push(stroke.d)
-        # self.svg_strokes.append(svg_stroke)
-
-        # for node in nodes:
-        #     self.svg_strokes.append(svgwrite.shapes.Circle((str(node[1]), str(node[0])), r=1, fill="black"))
-        # logger.debug("Stipples created: %d", len(nodes))
-        #
-        # for tail in tails:
-        #     self.svg_strokes.append(svgwrite.shapes.Circle((str(tail[1]), str(tail[0])), r=0.5, fill="red"))
-        # logger.debug("Stipples created: %d", len(nodes))
-        # # from skimage import io
-        # # io.imsave("/tmp/out.png", image)
-        # # io.imshow(self.reference_image)
-        # # io.show()
 
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(14, 8))
