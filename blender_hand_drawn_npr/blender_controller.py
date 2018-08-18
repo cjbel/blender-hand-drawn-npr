@@ -21,6 +21,7 @@ pass_names = [
     "Depth",
     "Normal",
     "UV",
+    "Shadow",
     "AO",
     "IndexOB",
     "DiffDir"
@@ -47,6 +48,19 @@ def toggle_system(self, context):
 
         bpy.context.scene.render.engine = "CYCLES"  # TODO: Do we really want to force this change on the User here?
 
+        # Set default resolution.
+        bpy.context.scene.render.resolution_x = 3840
+        bpy.context.scene.render.resolution_y = 2160
+        bpy.context.scene.render.resolution_percentage = 100
+
+        # Disable all anti-aliasing.
+        bpy.context.scene.cycles.progressive = 'BRANCHED_PATH'
+        bpy.context.scene.cycles.aa_samples = 1
+        bpy.context.scene.cycles.preview_aa_samples = 0
+
+        bpy.context.scene.cycles.diffuse_samples = 10
+        bpy.context.scene.cycles.ao_samples = 10
+
         # TODO: Consider making the layer selectable by the User in the GUI, rather than assuming this here.
         layer = bpy.context.scene.render.layers["RenderLayer"]
         logger.debug("Configuring passes for " + layer.name)
@@ -55,6 +69,7 @@ def toggle_system(self, context):
         layer.use_pass_object_index = True
         layer.use_pass_z = True
         layer.use_pass_diffuse_direct = True
+        layer.use_pass_shadow = True
         layer.use_pass_ambient_occlusion = True
         bpy.ops.wm.create_npr_compositor_nodes()
 
@@ -84,6 +99,9 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
     def execute(self, context):
         logger.debug("Executing CreateCompositorNodeOperator...")
 
+        # Blender command for troubleshooting.
+        # file_out_node = bpy.context.scene.node_tree.nodes[2]
+
         context.scene.use_nodes = True
         tree = bpy.context.scene.node_tree
 
@@ -95,7 +113,9 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
         render_layer_node = tree.nodes.new(type="CompositorNodeRLayers")
         render_layer_node.location = 0, 0
         file_out_node = tree.nodes.new(type="CompositorNodeOutputFile")
-        file_out_node.location = 300, 0
+        file_out_node.location = 440, 0
+        normalise_node = tree.nodes.new(type="CompositorNodeNormalize")
+        normalise_node.location = 220, 10
 
         # Configure image path.
         file_out_node.base_path = tempfile.gettempdir()
@@ -105,7 +125,26 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
         links = tree.links
         for pass_name in pass_names:
             file_out_node.file_slots.new(name=pass_name)
-            links.new(render_layer_node.outputs[pass_name], file_out_node.inputs[pass_name])
+            if pass_name == "Depth":
+                links.new(render_layer_node.outputs[pass_name], normalise_node.inputs[0])
+                links.new(normalise_node.outputs[0], file_out_node.inputs[pass_name])
+            else:
+                links.new(render_layer_node.outputs[pass_name], file_out_node.inputs[pass_name])
+
+        # Configure required image formats.
+        file_out_node.format.compression = 0
+        file_out_node.format.color_depth = "8"
+
+        # Need to use tiff for 16-bit colour depth.
+        file_out_node.file_slots['Normal'].use_node_format = False
+        file_out_node.file_slots['Normal'].format.file_format = 'TIFF'
+        file_out_node.file_slots['Normal'].format.color_depth = "16"
+        file_out_node.file_slots['Normal'].format.tiff_codec = 'NONE'
+
+        file_out_node.file_slots['UV'].use_node_format = False
+        file_out_node.file_slots['UV'].format.file_format = 'TIFF'
+        file_out_node.file_slots['UV'].format.color_depth = "16"
+        file_out_node.file_slots['UV'].format.tiff_codec = 'NONE'
 
         return {'FINISHED'}
 

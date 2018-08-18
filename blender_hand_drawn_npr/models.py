@@ -77,6 +77,8 @@ class Surface:
     def at_point(self, x, y):
         assert x >= 0
         assert y >= 0
+        assert 0 <= x <= self.obj_image.shape[1]
+        assert 0 <= y <= self.obj_image.shape[0]
 
         x = int(x)
         y = int(y)
