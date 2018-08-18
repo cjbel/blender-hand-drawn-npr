@@ -2,6 +2,7 @@ import logging
 import math
 
 import numpy as np
+import svgpathtools as svgp
 import svgwrite
 from scipy import stats
 from skimage import measure, util
@@ -12,11 +13,7 @@ from blender_hand_drawn_npr.variable_density import moving_front_nodes
 logger = logging.getLogger(__name__)
 
 
-def create_curved_stroke(fit_path, hifi_path, thickness_parameters, surface, settings):
-    logger.debug("Creating stroke with %d points...", len(fit_path.points))
-
-    construction_curve = Curve1D(fit_path=fit_path, settings=settings)
-
+def create_curved_stroke(construction_curve, hifi_path, thickness_parameters, surface, settings):
     upper_path = construction_curve.offset(interval=settings.curve_sampling_interval,
                                            hifi_path=hifi_path,
                                            thickness_parameters=thickness_parameters,
@@ -44,7 +41,15 @@ class Silhouette:
         self.surface = surface
         self.settings = settings
         self.paths = []
+        self.boundary_curves = []
+        self.clip_path_d = None
         self.svg_strokes = []
+
+    def __generate_clip_path(self):
+
+        # Combine curves into a single path.
+        combined = svgp.path.concatpaths([svgp.parse_path(curve) for curve in self.boundary_curves])
+        self.clip_path_d = combined.d()
 
     def generate(self):
         """
@@ -82,7 +87,9 @@ class Silhouette:
                 continue
 
             logger.debug("Creating Silhouette stroke...")
-            stroke = create_curved_stroke(fit_path=fit_path,
+            construction_curve = Curve1D(fit_path=fit_path, settings=self.settings)
+            self.boundary_curves.append(construction_curve.d)
+            stroke = create_curved_stroke(construction_curve=construction_curve,
                                           hifi_path=hifi_path,
                                           thickness_parameters=self.settings.silhouette_thickness_parameters,
                                           surface=self.surface,
@@ -125,6 +132,8 @@ class Silhouette:
             # #####################################################################################
 
             logger.info("Silhouette Strokes prepared: %d", len(self.svg_strokes))
+
+        self.__generate_clip_path()
 
 
 class Streamlines:
@@ -245,7 +254,8 @@ class Streamline:
                     # Store to allow plotting of construction points for debugging.
                     self.paths.append(fit_path)
 
-                    stroke = create_curved_stroke(fit_path=fit_path,
+                    construction_curve = Curve1D(fit_path=fit_path, settings=self.settings)
+                    stroke = create_curved_stroke(construction_curve=construction_curve,
                                                   hifi_path=hifi_path,
                                                   thickness_parameters=self.settings.streamline_thickness_parameters,
                                                   surface=self.surface,
@@ -261,7 +271,9 @@ class Stipples:
     Stipples are a collection of SVG Stipple strokes.
     """
 
-    def __init__(self, surface, settings):
+    def __init__(self, clip_path, intersect_boundaries, surface, settings):
+        self.clip_path = clip_path
+        self.intersect_boundaries = intersect_boundaries
         self.settings = settings
         self.surface = surface
 
@@ -324,9 +336,8 @@ class Stipples:
         u_image = self.surface.u_image
         v_image = self.surface.v_image
 
-        length = 50  # TODO: Make user-configurable.
-        head_radius = 0.8  # TODO: Make user-configurable.
-        tail_radius = 0  # TODO: Make user-configurable.
+        # Parse intersect boundaries for use in the main loop.
+        intersect_boundaries = [svgp.parse_path(d) for d in self.intersect_boundaries]
 
         # Remember node coordinates remain in row, column format here.
         for node in nodes:
@@ -360,28 +371,49 @@ class Stipples:
             # Angle between these points.
             heading = math.degrees(math.atan2(y_delta, x_delta))
 
-            stipple = DirectionalStippleStroke(length=length, r0=head_radius, r1=tail_radius, p0=(node[1], node[0]),
+            stipple = DirectionalStippleStroke(length=self.settings.stipple_parameters.length,
+                                               r0=self.settings.stipple_parameters.head_radius,
+                                               r1=self.settings.stipple_parameters.tail_radius,
+                                               p0=(node[1], node[0]),
                                                heading=heading)
-            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+
+            optimise_clip_paths = True
+            clip_path_url = "url(" + self.clip_path.get_iri() + ")"
+            if optimise_clip_paths:
+                svgp_stipple = svgp.parse_path(stipple.d)
+                found = []
+                for intersect_boundary in intersect_boundaries:
+                    found += intersect_boundary.intersect(svgp_stipple)
+
+                if found:
+                    svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0,
+                                                    clip_path=clip_path_url)
+                else:
+                    svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+
+            else:
+                svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0,
+                                                clip_path=clip_path_url)
+
             svg_stroke.push(stipple.d)
             self.svg_strokes.append(svg_stroke)
 
         # logger.debug("Creating Stipple strokes...")
 
-        import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(14, 8))
-        ax1 = fig.add_subplot(1, 1, 1)
-        plt.rc('figure', figsize=(12.0, 12.0))
-
-        # node layout
-        ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
-        ax1.axis("image")
-        ax1.set_xlim(0, x_res)
-        ax1.set_ylim(0, y_res)
-        ax1.set_title("Threshold: " + str(threshold))
-        ax1.invert_yaxis()
-
-        plt.show()
+        # import matplotlib.pyplot as plt
+        # fig = plt.figure(figsize=(14, 8))
+        # ax1 = fig.add_subplot(1, 1, 1)
+        # plt.rc('figure', figsize=(12.0, 12.0))
+        #
+        # # node layout
+        # ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
+        # ax1.axis("image")
+        # ax1.set_xlim(0, x_res)
+        # ax1.set_ylim(0, y_res)
+        # ax1.set_title("Threshold: " + str(threshold))
+        # ax1.invert_yaxis()
+        #
+        # plt.show()
 
 
 if __name__ == "__main__":

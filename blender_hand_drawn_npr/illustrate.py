@@ -5,7 +5,7 @@ import svgwrite
 
 from blender_hand_drawn_npr.elements import Silhouette, Streamlines, Stipples
 from blender_hand_drawn_npr.models import Surface
-from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters, LightingParameters
+from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters, LightingParameters, StippleParameters
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,8 @@ class Illustrator:
                                  uv_secondary_trim_size=20,
                                  stroke_penalty=5,
                                  lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=0,
-                                                                        threshold=0.3))
+                                                                        threshold=0.3),
+                                 stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=50))
 
         # # Bump plane, 1D curvature.
         # self.settings = Settings(cull_factor=50,
@@ -80,16 +81,22 @@ class Illustrator:
                                    self.surface.obj_image.shape[0])
         self.illustration = svgwrite.Drawing(os.path.join(self.img_dir, self.out_filename), illustration_dimensions)
 
+        self.intersect_boundaries = []
+
     def illustrate(self):
         silhouette = Silhouette(surface=self.surface, settings=self.settings)
         silhouette.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in silhouette.svg_strokes]
+        [self.intersect_boundaries.append(boundary_curve) for boundary_curve in silhouette.boundary_curves]
+        clip_path = self.illustration.defs.add(self.illustration.clipPath(id='silhouette_clip_path'))
+        clip_path.add(svgwrite.path.Path(silhouette.clip_path_d))
 
         streamlines = Streamlines(surface=self.surface, settings=self.settings)
         streamlines.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
 
-        stipples = Stipples(surface=self.surface, settings=self.settings)
+        stipples = Stipples(clip_path=clip_path, intersect_boundaries=self.intersect_boundaries,
+                            surface=self.surface, settings=self.settings)
         stipples.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in stipples.svg_strokes]
 

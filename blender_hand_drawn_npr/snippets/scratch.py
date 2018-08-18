@@ -1,43 +1,33 @@
-from blender_hand_drawn_npr.variable_density import moving_front_nodes
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from skimage import io
+import svgpathtools as svgp
+import svgwrite
 
+illustration = svgwrite.Drawing("/tmp/test.svg", (3840, 2160))
 
-class Doodah:
+curves = [
+    'M 1549,1766 C 1499,1732 1450.16,1696.23 1399,1664 C 1383.36,1654.15 1366.28,1646.57 1349,1640 C 1332.82,1633.85 1316.08,1628.82 1299,1626 C 1230.66,1614.72 1163.08,1618.27 1099,1592 C 1081.62,1584.87 1063.8,1577.57 1049,1566 C 1014.44,1538.96 981.135,1509.81 952,1477 C 880.587,1396.57 818.316,1308.39 748,1227 C 733.486,1210.2 716.119,1195.83 698,1183 C 632.657,1136.74 565.556,1092.97 498,1050 C 482.149,1039.92 466.181,1028.73 448,1024 C 431.87,1019.81 414.52,1021.8 398,1024 C 364.305,1028.49 331.879,1046.79 298,1044 C 275.831,1042.18 259.333,1022 240,1011',
+    'M 240,1011 C 266.667,1001.33 293.333,991.667 320,982',
+    'M 320,982 C 353.333,960.333 388.144,940.786 420,917 C 488.243,866.045 550.338,806.996 620,758 C 650.731,736.386 684.65,718.726 720,706 C 785.138,682.55 852.732,666.369 920,650 C 952.853,642.006 986.41,636.863 1020,633 C 1053.17,629.185 1086.61,626.517 1120,627 C 1202.07,628.186 1284,634.333 1366,638',
+    'M 1366,638 C 1399.33,635.667 1432.98,636.118 1466,631 C 1499.88,625.749 1533.5,617.889 1566,607 C 1600.41,595.474 1633.55,580.227 1666,564 C 1711.64,541.181 1755.33,514.667 1800,490',
+    'M 1800,490 C 1850,522.667 1897.45,559.622 1950,588 C 1981.27,604.888 2015.52,616.38 2050,625 C 2082.61,633.153 2116.39,638 2150,638 C 2216.81,638 2283.23,627.226 2350,625 C 2383.33,623.889 2417.2,621.986 2450,628 C 2517.75,640.422 2582.92,664.348 2650,680 C 2682.98,687.696 2716.31,694.482 2750,698 C 2866.43,710.161 2983.71,713.53 3100,727 C 3156.57,733.552 3212,747.667 3268,758',
+    'M 3268,758 C 3235,777 3200.52,793.634 3169,815 C 3150.62,827.457 3134.42,843.029 3119,859 C 3040.69,940.092 2969.87,1028.51 2888,1106 C 2857.31,1135.04 2818,1153.33 2783,1177',
+    'M 2783,1177 C 2749.67,1188.33 2717.61,1204.54 2683,1211 C 2617.07,1223.31 2548.68,1219.43 2483,1233 C 2447.84,1240.27 2415.03,1256.77 2383,1273 C 2314.84,1307.53 2248.33,1345.37 2183,1385 C 2048.27,1466.74 1918.07,1555.83 1783,1637 C 1706.66,1682.88 1627,1723 1549,1766']
 
-    def __init__(self, dir):
-        self.image = io.imread(dir, as_gray=True)
+# for curve in curves:
+#     svg_stroke = svgwrite.path.Path(stroke="black", stroke_width=0.5, fill="none")
+#     svg_stroke.push(curve)
+#     illustration.add(svg_stroke)
+# illustration.save()
 
-    # simple function; flat everywhere, with dense point in the centre
-    def density_fn(self, x, y):
-        # return np.maximum(0.1, (self.image[int(round(y)), int(round(x))]) * 0.5)
-        # return np.maximum(0.1, (self.image[int(round(y)), int(round(x))]) * 0.3)
-        # return np.maximum(0.01, (self.image[int(round(y)), int(round(x))]) * 0.1)
-        return np.maximum(0.005, ((self.image[int(round(y)), int(round(x))]) ** 4) * 0.5)
+svgp_curves = []
+for curve in curves:
+    svgp_curves.append(svgp.parse_path(curve))
 
+combined = svgp.path.concatpaths(svgp_curves)
 
-dir = 'basic_placement/DiffDir0001.png'
-doodah = Doodah(dir)
+clip_path = illustration.defs.add(illustration.clipPath(id='silhouette_clip_path'))
+clip_path.add(svgwrite.path.Path(combined.d()))
 
-# nodes = moving_front_nodes(doodah.density_fn, (500, 250, 600, 350))
-nodes = moving_front_nodes(doodah.density_fn, (0, 0, 960 - 1, 540 - 1), new_pts=10)
-# print(nodes)
+clip_path_url = "url(" + clip_path.get_iri() + ")"
+illustration.add(svgwrite.shapes.Circle((2000, 2000), r=1000, fill="magenta", clip_path=clip_path_url))
 
-fig = plt.figure(figsize=(14, 8))
-ax1 = fig.add_subplot(1, 1, 1)
-
-plt.rc('figure', figsize=(12.0, 12.0))
-
-# node layout
-ax1.plot(nodes[:, 0], nodes[:, 1], '.', markersize=1)
-ax1.axis("image")
-# ax1.set_xlim(500, 600)
-# ax1.set_ylim(250, 350)
-ax1.set_xlim(0, 960)
-ax1.set_ylim(0, 540)
-ax1.set_title("Node density")
-ax1.invert_xaxis()
-
-plt.show()
+illustration.save()

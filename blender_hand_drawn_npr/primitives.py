@@ -29,7 +29,8 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "uv_primary_trim_size",
                                    "uv_secondary_trim_size",
                                    "stroke_penalty",
-                                   "lighting_parameters"])
+                                   "lighting_parameters",
+                                   "stipple_parameters"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -40,6 +41,10 @@ LightingParameters = namedtuple("LightingParameters", ["diffdir",
                                                        "shadow",
                                                        "ao",
                                                        "threshold"])
+
+StippleParameters = namedtuple("StippleParameters", ["head_radius",
+                                                     "tail_radius",
+                                                     "length"])
 
 
 class Path:
@@ -416,6 +421,10 @@ class Curve1D:
                     curvature = segment.curvature(step)
                     thickness += stroke_curvature_factor * curvature
 
+                if thickness == 0:
+                    # Zero thickness causes problems with svgpathtools, so enforce a minimum thickness close to zero.
+                    thickness = 1e-03
+
                 # Compute offset coordinates for each side (a and b) of the t-step.
                 normal = segment.normal(step)
 
@@ -581,6 +590,10 @@ class DirectionalStippleStroke:
         logger.debug("Starting generate...")
 
         # Define the parameterised stroke outline.
+
+        if self.r1 == 0:
+            # Zero arc radius causes problems with svgpathtools, so enforce a minimum radius close to zero.
+            self.r1 = 1e-03
 
         # With the center of the leftmost end-cap taken as (0, 0), a 2D straight stroke with rounded ends can be
         # modelled as four vertices as follows.
