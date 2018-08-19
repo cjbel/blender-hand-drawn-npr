@@ -16,6 +16,7 @@ class Surface:
         self.obj_image = obj_image
         self.z_image = z_image
         self.diffdir_image = diffdir_image
+        self.norm_image = None
         self.norm_x_image = norm_x_image
         self.norm_y_image = norm_y_image
         self.norm_z_image = norm_z_image
@@ -45,6 +46,7 @@ class Surface:
         logger.info("Normal image loaded: %s", file_path)
         # Original image will be mapped to non-linear colourspace. Correct the normals by adjusting this.
         norm_image = exposure.adjust_gamma(norm_image, 2.2)
+        self.norm_image = norm_image
 
         # Normal x values are encoded in red channel.
         self.norm_x_image = norm_image[:, :, 0]

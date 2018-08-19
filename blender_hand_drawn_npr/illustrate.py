@@ -16,7 +16,30 @@ class Illustrator:
         self.img_dir = img_dir
         self.out_filename = out_filename
 
-        # Undulating plane.
+        # Hyperbolic Paraboloid.
+        # self.settings = Settings(cull_factor=50,
+        #                          optimise_factor=5,
+        #                          curve_fit_error=0.01,
+        #                          harris_min_distance=40,
+        #                          subpix_window_size=20,
+        #                          curve_sampling_interval=20,
+        #                          stroke_colour="black",
+        #                          streamline_segments=32,
+        #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
+        #                                                                              stroke_curvature=0),
+        #                          streamline_thickness_parameters=ThicknessParameters(const=0.01, z=0.1, diffdir=0,
+        #                                                                              stroke_curvature=50),
+        #                          uv_primary_trim_size=200,
+        #                          uv_secondary_trim_size=20,
+        #                          lighting_parameters=LightingParameters(diffdir=0, shadow=1, ao=1,
+        #                                                                 threshold=0.3),
+        #                          stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=10,
+        #                                                               density_fn_min=0.0005,
+        #                                                               density_fn_factor=0.0025,
+        #                                                               density_fn_exponent=3),
+        #                          optimise_clip_paths=True)
+
+        # Human.
         self.settings = Settings(cull_factor=50,
                                  optimise_factor=5,
                                  curve_fit_error=0.01,
@@ -24,49 +47,20 @@ class Illustrator:
                                  subpix_window_size=20,
                                  curve_sampling_interval=20,
                                  stroke_colour="black",
-                                 streamline_segments=32,
-                                 silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
+                                 streamline_segments=128,
+                                 silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
                                                                                      stroke_curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0, z=0.1, diffdir=0,
-                                                                                     stroke_curvature=50),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0.001, z=0.2, diffdir=0,
+                                                                                     stroke_curvature=0),
                                  uv_primary_trim_size=200,
                                  uv_secondary_trim_size=20,
-                                 stroke_penalty=5,
-                                 lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=0,
-                                                                        threshold=0.3),
-                                 stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=50))
-
-        # # Bump plane, 1D curvature.
-        # self.settings = Settings(cull_factor=50,
-        #                          optimise_factor=5,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=40,
-        #                          subpix_window_size=20,
-        #                          curve_sampling_interval=20,
-        #                          stroke_colour="black",
-        #                          streamline_segments=32,
-        #                          silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
-        #                                                                              streamline_curvature=0),
-        #                          streamline_thickness_parameters=ThicknessParameters(const=0, z=0, diffdir=0,
-        #                                                                              streamline_curvature=100),
-        #                          uv_primary_trim_size=200,
-        #                          uv_secondary_trim_size=20)
-
-        # # Hyperbolic paraboloid.
-        # self.settings = Settings(cull_factor=50,
-        #                          optimise_factor=5,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=40,
-        #                          subpix_window_size=20,
-        #                          curve_sampling_interval=20,
-        #                          stroke_colour="black",
-        #                          streamline_segments=32,
-        #                          silhouette_thickness_parameters=ThicknessParameters(const=0, z=4, diffdir=0,
-        #                                                                              streamline_curvature=0),
-        #                          streamline_thickness_parameters=ThicknessParameters(const=0, z=0.8, diffdir=0,
-        #                                                                              streamline_curvature=100),
-        #                          uv_primary_trim_size=200,
-        #                          uv_secondary_trim_size=20)
+                                 lighting_parameters=LightingParameters(diffdir=1, shadow=2, ao=3,
+                                                                        threshold=0.2),
+                                 stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=30,
+                                                                      density_fn_min=0.0005,
+                                                                      density_fn_factor=0.0025,
+                                                                      density_fn_exponent=3),
+                                 optimise_clip_paths=True)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -107,12 +101,14 @@ class Illustrator:
 
 
 if __name__ == "__main__":
-    illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/test", "Illustration.svg")
     # illustrator = Illustrator("/tmp/bump", "Illustration.svg")
     # illustrator = Illustrator("/tmp/flat", "Illustration.svg")
     # illustrator = Illustrator("/tmp/sphere", "Illustration.svg")
     # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy", "Illustration.svg")
     # illustrator = Illustrator("/tmp/surface_1D_curvature", "Illustration.svg")
     # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
+    illustrator = Illustrator("/tmp/human", "Illustration.svg")
     illustrator.illustrate()
     illustrator.save()

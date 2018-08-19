@@ -28,9 +28,9 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "streamline_thickness_parameters",
                                    "uv_primary_trim_size",
                                    "uv_secondary_trim_size",
-                                   "stroke_penalty",
                                    "lighting_parameters",
-                                   "stipple_parameters"])
+                                   "stipple_parameters",
+                                   "optimise_clip_paths"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -44,8 +44,10 @@ LightingParameters = namedtuple("LightingParameters", ["diffdir",
 
 StippleParameters = namedtuple("StippleParameters", ["head_radius",
                                                      "tail_radius",
-                                                     "length"])
-
+                                                     "length",
+                                                     "density_fn_min",
+                                                     "density_fn_factor",
+                                                     "density_fn_exponent"])
 
 class Path:
     """
@@ -196,7 +198,7 @@ class Path:
                             # Final loop iteration failed to find a match.
                             logger.warning("A valid point could not be found!")
 
-                    except AssertionError:
+                    except (AssertionError, IndexError):
                         logger.warning("Candidate point out of allowable range: %s", candidate_point)
 
         return Path(points)

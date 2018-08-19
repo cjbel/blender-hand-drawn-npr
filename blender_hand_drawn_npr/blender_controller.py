@@ -105,7 +105,7 @@ class CreateCompositorNodeOperator(bpy.types.Operator):
         context.scene.use_nodes = True
         tree = bpy.context.scene.node_tree
 
-        # Remove all nodes. TODO: It would be better to save the User's current tree, then we can revert back to it.
+        # Remove all nodes.
         for node in tree.nodes:
             tree.nodes.remove(node)
 

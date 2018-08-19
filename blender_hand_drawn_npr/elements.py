@@ -282,7 +282,13 @@ class Stipples:
         self.svg_strokes = []
 
     def density_function(self, x, y):
-        return np.maximum(0.002, (self.reference_image[int(round(y)), int(round(x))]) * 0.01)
+        min = self.settings.stipple_parameters.density_fn_min
+        factor = self.settings.stipple_parameters.density_fn_factor
+        exponent = self.settings.stipple_parameters.density_fn_exponent
+
+        density = np.maximum(min, (self.reference_image[int(round(y)), int(round(x))] ** exponent) * factor)
+
+        return density
 
     def __prepare_reference(self):
         from skimage import io
@@ -333,6 +339,19 @@ class Stipples:
         # Extract the list of node coordinates from the image.
         nodes = np.argwhere(image)
 
+        import matplotlib.pyplot as plt
+        fig = plt.figure(figsize=(14, 8))
+        ax1 = fig.add_subplot(1, 1, 1)
+        plt.rc('figure', figsize=(12.0, 12.0))
+        # node layout
+        ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
+        ax1.axis("image")
+        ax1.set_xlim(0, x_res)
+        ax1.set_ylim(0, y_res)
+        ax1.set_title("Threshold: " + str(threshold))
+        ax1.invert_yaxis()
+        plt.show()
+
         u_image = self.surface.u_image
         v_image = self.surface.v_image
 
@@ -349,13 +368,17 @@ class Stipples:
             rr, cc = draw.circle_perimeter(r=node[0], c=node[1], radius=10)
             errors = {}
             for i in range(0, len(rr)):
-                candidate_v = v_image[rr[i], cc[i]]
-                # Select only for secondary coordinate values above the current value.
-                if candidate_v > v_image[node[0], node[1]]:
-                    candidate_u = u_image[rr[i], cc[i]]
-                    # Compute error, cast to Python int required to avoid issues with numpy uint16 overflow.
-                    error = abs(target.item() - candidate_u.item())
-                    errors[rr[i], cc[i]] = error
+                try:
+                    candidate_v = v_image[rr[i], cc[i]]
+                    # Select only for secondary coordinate values above the current value.
+                    if candidate_v > v_image[node[0], node[1]]:
+                        candidate_u = u_image[rr[i], cc[i]]
+                        # Compute error, cast to Python int required to avoid issues with numpy uint16 overflow.
+                        error = abs(target.item() - candidate_u.item())
+                        errors[rr[i], cc[i]] = error
+                except IndexError:
+                    # Candidate index was off the image, ignore.
+                    pass
 
             # There may be multiple minimums, but it's good enough to settle for the first that's encountered.
             try:
@@ -377,9 +400,8 @@ class Stipples:
                                                p0=(node[1], node[0]),
                                                heading=heading)
 
-            optimise_clip_paths = True
             clip_path_url = "url(" + self.clip_path.get_iri() + ")"
-            if optimise_clip_paths:
+            if self.settings.optimise_clip_paths:
                 svgp_stipple = svgp.parse_path(stipple.d)
                 found = []
                 for intersect_boundary in intersect_boundaries:
@@ -397,23 +419,6 @@ class Stipples:
 
             svg_stroke.push(stipple.d)
             self.svg_strokes.append(svg_stroke)
-
-        # logger.debug("Creating Stipple strokes...")
-
-        # import matplotlib.pyplot as plt
-        # fig = plt.figure(figsize=(14, 8))
-        # ax1 = fig.add_subplot(1, 1, 1)
-        # plt.rc('figure', figsize=(12.0, 12.0))
-        #
-        # # node layout
-        # ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
-        # ax1.axis("image")
-        # ax1.set_xlim(0, x_res)
-        # ax1.set_ylim(0, y_res)
-        # ax1.set_title("Threshold: " + str(threshold))
-        # ax1.invert_yaxis()
-        #
-        # plt.show()
 
 
 if __name__ == "__main__":
