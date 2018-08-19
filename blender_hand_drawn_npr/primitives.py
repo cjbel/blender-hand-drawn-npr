@@ -8,11 +8,10 @@ import svgwrite
 from more_itertools import unique_everseen
 from scipy import arange, spatial
 from scipy.interpolate import interp1d
-from skimage.feature import corner_harris, corner_peaks, corner_subpix
 from skimage import measure
+from skimage.feature import corner_harris, corner_peaks, corner_subpix
 
 import blender_hand_drawn_npr.PathFitter as pf
-from blender_hand_drawn_npr.models import Surface
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +24,7 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "stroke_colour",
                                    "streamline_segments",
                                    "silhouette_thickness_parameters",
+                                   "internal_edge_thickness_parameters",
                                    "streamline_thickness_parameters",
                                    "uv_primary_trim_size",
                                    "uv_secondary_trim_size",
@@ -48,6 +48,7 @@ StippleParameters = namedtuple("StippleParameters", ["head_radius",
                                                      "density_fn_min",
                                                      "density_fn_factor",
                                                      "density_fn_exponent"])
+
 
 class Path:
     """

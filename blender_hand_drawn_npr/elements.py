@@ -4,8 +4,8 @@ import math
 import numpy as np
 import svgpathtools as svgp
 import svgwrite
-from scipy import stats
-from skimage import measure, util
+from scipy import stats, ndimage
+from skimage import measure, util, feature, morphology, graph
 
 from blender_hand_drawn_npr.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
 from blender_hand_drawn_npr.variable_density import moving_front_nodes
@@ -82,7 +82,7 @@ class Silhouette:
             hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(self.settings.cull_factor)
             fit_path = hifi_path.optimise(self.settings.optimise_factor)
 
-            if len(path.points) < 2:
+            if len(fit_path.points) < 2:
                 logger.debug("Silhouette path of length %d ignored.", len(path.points))
                 continue
 
@@ -134,6 +134,92 @@ class Silhouette:
             logger.info("Silhouette Strokes prepared: %d", len(self.svg_strokes))
 
         self.__generate_clip_path()
+
+
+class InternalEdges:
+
+    def __init__(self, surface, settings):
+        self.settings = settings
+        self.surface = surface
+
+        self.paths = []
+        self.boundary_curves = []
+
+        self.svg_strokes = []
+
+    def __find_paths(self):
+        # By using the object image as a mask we find only internal edges and disregard silhouette edges.
+        edge_image = feature.canny(self.surface.z_image, sigma=1, mask=self.surface.obj_image.astype(bool))
+
+        # Identify all continuous lines.
+        labels = measure.label(edge_image, connectivity=2)
+
+        # # Plot the discovered regions.
+        # image_label_overlay = color.label2rgb(labels, image=edge_image)
+        # fig, ax = plt.subplots(figsize=(10, 6))
+        # ax.imshow(image_label_overlay)
+        # for region in measure.regionprops(labels):
+        #     minr, minc, maxr, maxc = region.bbox
+        #     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
+        #                               fill=False, edgecolor='yellow', linewidth=0.25)
+        #     ax.add_patch(rect)
+        # ax.set_axis_off()
+        # plt.tight_layout()
+        # plt.show()
+
+        for region in measure.regionprops(labels):
+            image = region.image
+            # Condition the line to ensure each cell has only one or two neighbours (remove "L"s).
+            image = morphology.skeletonize(image)
+
+            # A cell with only one neighbour can be considered as the end of a continuous line, i.e
+            # the sum of a cell's 8 surrounding neighbours will equal 1.
+            kernel = [[1, 1, 1],
+                      [1, 0, 1],
+                      [1, 1, 1]]
+            convolved = ndimage.convolve(image.astype(float), kernel, mode="constant")
+            # Refine the convolution to only contain cells which were present in the original image.
+            convolved[util.invert(image)] = 0
+
+            # Extract the region coordinates of cells which meet the condition for being a start/end position.
+            terminator_pair = np.argwhere(convolved == 1)
+            if not len(terminator_pair):
+                continue
+
+            # Make edges have a value of 0 ("cheap").
+            image = util.invert(image)
+
+            # An ordered list of coordinates for each line is now found by computing the cheapest route between each
+            # terminator_pair.
+            route, cost = graph.route_through_array(image, terminator_pair[0], terminator_pair[1])
+
+            # Convert regional route coords back to global coords.
+            region_offset = [region.bbox[0], region.bbox[1]]
+            coords = np.array(route) + region_offset
+            self.paths.append(Path(coords, is_rc=True))
+
+    def generate(self):
+        self.__find_paths()
+
+        for path in self.paths:
+            hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(self.settings.cull_factor)
+            fit_path = hifi_path.optimise(self.settings.optimise_factor)
+
+            if len(fit_path.points) < 2:
+                logger.debug("Internal Edge path of length %d ignored.", len(path.points))
+                continue
+
+            logger.debug("Creating Internal Edge stroke...")
+            construction_curve = Curve1D(fit_path=fit_path, settings=self.settings)
+            self.boundary_curves.append(construction_curve.d)
+            stroke = create_curved_stroke(construction_curve=construction_curve,
+                                          hifi_path=hifi_path,
+                                          thickness_parameters=self.settings.internal_edge_thickness_parameters,
+                                          surface=self.surface,
+                                          settings=self.settings)
+            svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
+            svg_stroke.push(stroke.d)
+            self.svg_strokes.append(svg_stroke)
 
 
 class Streamlines:

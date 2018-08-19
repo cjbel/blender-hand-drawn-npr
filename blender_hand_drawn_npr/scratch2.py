@@ -8,7 +8,8 @@ import matplotlib.patches as mpatches
 
 # img_dir = "/tmp/test"
 # img_dir = "/tmp/hyperbolic_paraboloid_xy"
-img_dir = "/tmp/undulating_plane2"
+# img_dir = "/tmp/undulating_plane2"
+# img_dir = "/tmp/human"
 
 surface = Surface()
 surface.init_obj_image(os.path.join(img_dir, "IndexOB0001.png"))
