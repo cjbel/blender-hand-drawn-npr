@@ -202,7 +202,7 @@ class InternalEdges:
         self.__find_paths()
 
         for path in self.paths:
-            hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(self.settings.cull_factor)
+            hifi_path = path.round().bump_z(self.surface).remove_dupes().simple_cull(self.settings.cull_factor)
             fit_path = hifi_path.optimise(self.settings.optimise_factor)
 
             if len(fit_path.points) < 2:
@@ -464,6 +464,7 @@ class Stipples:
                         errors[rr[i], cc[i]] = error
                 except IndexError:
                     # Candidate index was off the image, ignore.
+                    logger.warning("Candidate index was off the image.")
                     pass
 
             # There may be multiple minimums, but it's good enough to settle for the first that's encountered.

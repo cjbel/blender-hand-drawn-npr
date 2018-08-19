@@ -8,7 +8,7 @@ import svgwrite
 from more_itertools import unique_everseen
 from scipy import arange, spatial
 from scipy.interpolate import interp1d
-from skimage import measure
+from skimage import measure, filters, morphology, util
 from skimage.feature import corner_harris, corner_peaks, corner_subpix
 
 import blender_hand_drawn_npr.PathFitter as pf
@@ -201,6 +201,34 @@ class Path:
 
                     except (AssertionError, IndexError):
                         logger.warning("Candidate point out of allowable range: %s", candidate_point)
+
+        return Path(points)
+
+    def bump_z(self, surface):
+
+        points = list(self.__points)
+
+        image = surface.z_image
+        # We want to push coordinates to lower depth values, so make sure the background is set low.
+        # image[[util.invert(surface.obj_image.astype(bool))]] = 0
+
+        window_shape = (3, 3)
+        windows = util.view_as_windows(image, window_shape)
+
+        for i, point in enumerate(points):
+            # print("Point coord: ", point)
+            query_coord = (point[1] - 1, point[0] - 1)
+            # print("Query coord: ", query_coord)
+            local_window = windows[query_coord]
+            # print(local_window)
+
+            indices = np.where(local_window == local_window.min())
+            local_coords = indices[0][0], indices[1][0]
+            # print("Local coord: ", local_coords)
+            global_coords = local_coords[0] + query_coord[0], local_coords[1] + query_coord[1]
+            # print("Global coord: ", global_coords)
+
+            points[i] = global_coords[1], global_coords[0]
 
         return Path(points)
 
@@ -597,6 +625,9 @@ class DirectionalStippleStroke:
         if self.r1 == 0:
             # Zero arc radius causes problems with svgpathtools, so enforce a minimum radius close to zero.
             self.r1 = 1e-03
+        if self.length == 0:
+            # Zero length causes problems with svgpathtools, so enforce a length close to zero.
+            self.length = 1e-03
 
         # With the center of the leftmost end-cap taken as (0, 0), a 2D straight stroke with rounded ends can be
         # modelled as four vertices as follows.

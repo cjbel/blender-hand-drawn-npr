@@ -3,7 +3,7 @@ import os
 
 import svgwrite
 
-from blender_hand_drawn_npr.elements import Silhouette, InternalEdges
+from blender_hand_drawn_npr.elements import Silhouette, InternalEdges, Streamlines, Stipples
 from blender_hand_drawn_npr.models import Surface
 from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters, LightingParameters, StippleParameters
 
@@ -17,29 +17,29 @@ class Illustrator:
         self.out_filename = out_filename
 
         # Hyperbolic Paraboloid.
-        self.settings = Settings(cull_factor=50,
-                                 optimise_factor=5,
-                                 curve_fit_error=0.01,
-                                 harris_min_distance=40,
-                                 subpix_window_size=20,
-                                 curve_sampling_interval=20,
-                                 stroke_colour="black",
-                                 streamline_segments=32,
-                                 silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-                                                                                     stroke_curvature=0),
-                                 internal_edge_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-                                                                                        stroke_curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0.01, z=0.1, diffdir=0,
-                                                                                     stroke_curvature=50),
-                                 uv_primary_trim_size=200,
-                                 uv_secondary_trim_size=20,
-                                 lighting_parameters=LightingParameters(diffdir=0, shadow=1, ao=1,
-                                                                        threshold=0.3),
-                                 stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=10,
-                                                                      density_fn_min=0.0005,
-                                                                      density_fn_factor=0.0025,
-                                                                      density_fn_exponent=3),
-                                 optimise_clip_paths=True)
+        # self.settings = Settings(cull_factor=50,
+        #                          optimise_factor=5,
+        #                          curve_fit_error=0.01,
+        #                          harris_min_distance=40,
+        #                          subpix_window_size=20,
+        #                          curve_sampling_interval=20,
+        #                          stroke_colour="black",
+        #                          streamline_segments=32,
+        #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
+        #                                                                              stroke_curvature=0),
+        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
+        #                                                                                 stroke_curvature=0),
+        #                          streamline_thickness_parameters=ThicknessParameters(const=0.01, z=0.1, diffdir=0,
+        #                                                                              stroke_curvature=0),
+        #                          uv_primary_trim_size=200,
+        #                          uv_secondary_trim_size=20,
+        #                          lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=1,
+        #                                                                 threshold=0.3),
+        #                          stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=20,
+        #                                                               density_fn_min=0.005,
+        #                                                               density_fn_factor=0.0025,
+        #                                                               density_fn_exponent=2),
+        #                          optimise_clip_paths=True)
 
         # Human.
         # self.settings = Settings(cull_factor=50,
@@ -52,7 +52,7 @@ class Illustrator:
         #                          streamline_segments=128,
         #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
         #                                                                              stroke_curvature=0),
-        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.2, z=0, diffdir=0,
+        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.4, z=0, diffdir=0,
         #                                                                                 stroke_curvature=0),
         #                          streamline_thickness_parameters=ThicknessParameters(const=0.001, z=0.2, diffdir=0,
         #                                                                              stroke_curvature=0),
@@ -65,6 +65,56 @@ class Illustrator:
         #                                                               density_fn_factor=0.0025,
         #                                                               density_fn_exponent=3),
         #                          optimise_clip_paths=True)
+
+        # Undulating surface.
+        # self.settings = Settings(cull_factor=50,
+        #                          optimise_factor=5,
+        #                          curve_fit_error=0.01,
+        #                          harris_min_distance=40,
+        #                          subpix_window_size=20,
+        #                          curve_sampling_interval=20,
+        #                          stroke_colour="black",
+        #                          streamline_segments=32,
+        #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
+        #                                                                              stroke_curvature=0),
+        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.4, z=0, diffdir=0,
+        #                                                                                 stroke_curvature=0),
+        #                          streamline_thickness_parameters=ThicknessParameters(const=0.000, z=0, diffdir=0,
+        #                                                                              stroke_curvature=60),
+        #                          uv_primary_trim_size=200,
+        #                          uv_secondary_trim_size=20,
+        #                          lighting_parameters=LightingParameters(diffdir=2, shadow=1.2, ao=1,
+        #                                                                 threshold=0.4),
+        #                          stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=50,
+        #                                                               density_fn_min=0.001,
+        #                                                               density_fn_factor=0.006,
+        #                                                               density_fn_exponent=3),
+        #                          optimise_clip_paths=True)
+
+        # Teapot.
+        self.settings = Settings(cull_factor=50,
+                                 optimise_factor=5,
+                                 curve_fit_error=0.01,
+                                 harris_min_distance=40,
+                                 subpix_window_size=20,
+                                 curve_sampling_interval=20,
+                                 stroke_colour="black",
+                                 streamline_segments=32,
+                                 silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
+                                                                                     stroke_curvature=0),
+                                 internal_edge_thickness_parameters=ThicknessParameters(const=0.03, z=3, diffdir=0,
+                                                                                        stroke_curvature=0),
+                                 streamline_thickness_parameters=ThicknessParameters(const=0.01, z=0.1, diffdir=0,
+                                                                                     stroke_curvature=0),
+                                 uv_primary_trim_size=200,
+                                 uv_secondary_trim_size=20,
+                                 lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=1,
+                                                                        threshold=0.3),
+                                 stipple_parameters=StippleParameters(head_radius=3, tail_radius=3, length=0,
+                                                                      density_fn_min=0.005,
+                                                                      density_fn_factor=0.0025,
+                                                                      density_fn_exponent=2),
+                                 optimise_clip_paths=False)
 
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
@@ -96,11 +146,11 @@ class Illustrator:
         # streamlines = Streamlines(surface=self.surface, settings=self.settings)
         # streamlines.generate()
         # [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
-        #
-        # stipples = Stipples(clip_path=clip_path, intersect_boundaries=self.intersect_boundaries,
-        #                     surface=self.surface, settings=self.settings)
-        # stipples.generate()
-        # [self.illustration.add(svg_stroke) for svg_stroke in stipples.svg_strokes]
+
+        stipples = Stipples(clip_path=clip_path, intersect_boundaries=self.intersect_boundaries,
+                            surface=self.surface, settings=self.settings)
+        stipples.generate()
+        [self.illustration.add(svg_stroke) for svg_stroke in stipples.svg_strokes]
 
     def save(self):
         self.illustration.save()
@@ -109,14 +159,15 @@ class Illustrator:
 
 
 if __name__ == "__main__":
+    # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy", "Illustration.svg")
     # illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
+    illustrator = Illustrator("/tmp/teapot", "Illustration.svg")
     # illustrator = Illustrator("/tmp/test", "Illustration.svg")
     # illustrator = Illustrator("/tmp/bump", "Illustration.svg")
     # illustrator = Illustrator("/tmp/flat", "Illustration.svg")
     # illustrator = Illustrator("/tmp/sphere", "Illustration.svg")
-    illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy", "Illustration.svg")
     # illustrator = Illustrator("/tmp/surface_1D_curvature", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
     # illustrator = Illustrator("/tmp/human", "Illustration.svg")
     illustrator.illustrate()
     illustrator.save()
