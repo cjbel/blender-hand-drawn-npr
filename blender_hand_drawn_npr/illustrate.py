@@ -12,122 +12,22 @@ logger = logging.getLogger(__name__)
 
 class Illustrator:
 
-    def __init__(self, img_dir, out_filename):
-        self.img_dir = img_dir
-        self.out_filename = out_filename
-
-        # Hyperbolic Paraboloid.
-        # self.settings = Settings(cull_factor=50,
-        #                          optimise_factor=5,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=40,
-        #                          subpix_window_size=20,
-        #                          curve_sampling_interval=20,
-        #                          stroke_colour="black",
-        #                          streamline_segments=32,
-        #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-        #                                                                              stroke_curvature=0),
-        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-        #                                                                                 stroke_curvature=0),
-        #                          streamline_thickness_parameters=ThicknessParameters(const=0.01, z=0.1, diffdir=0,
-        #                                                                              stroke_curvature=0),
-        #                          uv_primary_trim_size=200,
-        #                          uv_secondary_trim_size=20,
-        #                          lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=1,
-        #                                                                 threshold=0.3),
-        #                          stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=20,
-        #                                                               density_fn_min=0.005,
-        #                                                               density_fn_factor=0.0025,
-        #                                                               density_fn_exponent=2),
-        #                          optimise_clip_paths=True)
-
-        # Human.
-        # self.settings = Settings(cull_factor=50,
-        #                          optimise_factor=5,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=40,
-        #                          subpix_window_size=20,
-        #                          curve_sampling_interval=20,
-        #                          stroke_colour="black",
-        #                          streamline_segments=128,
-        #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-        #                                                                              stroke_curvature=0),
-        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.4, z=0, diffdir=0,
-        #                                                                                 stroke_curvature=0),
-        #                          streamline_thickness_parameters=ThicknessParameters(const=0.001, z=0.2, diffdir=0,
-        #                                                                              stroke_curvature=0),
-        #                          uv_primary_trim_size=200,
-        #                          uv_secondary_trim_size=20,
-        #                          lighting_parameters=LightingParameters(diffdir=1, shadow=2, ao=3,
-        #                                                                 threshold=0.2),
-        #                          stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=30,
-        #                                                               density_fn_min=0.0005,
-        #                                                               density_fn_factor=0.0025,
-        #                                                               density_fn_exponent=3),
-        #                          optimise_clip_paths=True)
-
-        # Undulating surface.
-        # self.settings = Settings(cull_factor=50,
-        #                          optimise_factor=5,
-        #                          curve_fit_error=0.01,
-        #                          harris_min_distance=40,
-        #                          subpix_window_size=20,
-        #                          curve_sampling_interval=20,
-        #                          stroke_colour="black",
-        #                          streamline_segments=32,
-        #                          silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-        #                                                                              stroke_curvature=0),
-        #                          internal_edge_thickness_parameters=ThicknessParameters(const=0.4, z=0, diffdir=0,
-        #                                                                                 stroke_curvature=0),
-        #                          streamline_thickness_parameters=ThicknessParameters(const=0.000, z=0, diffdir=0,
-        #                                                                              stroke_curvature=60),
-        #                          uv_primary_trim_size=200,
-        #                          uv_secondary_trim_size=20,
-        #                          lighting_parameters=LightingParameters(diffdir=2, shadow=1.2, ao=1,
-        #                                                                 threshold=0.4),
-        #                          stipple_parameters=StippleParameters(head_radius=0.8, tail_radius=0, length=50,
-        #                                                               density_fn_min=0.001,
-        #                                                               density_fn_factor=0.006,
-        #                                                               density_fn_exponent=3),
-        #                          optimise_clip_paths=True)
-
-        # Teapot.
-        self.settings = Settings(cull_factor=50,
-                                 optimise_factor=5,
-                                 curve_fit_error=0.01,
-                                 harris_min_distance=40,
-                                 subpix_window_size=20,
-                                 curve_sampling_interval=20,
-                                 stroke_colour="black",
-                                 streamline_segments=32,
-                                 silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
-                                                                                     stroke_curvature=0),
-                                 internal_edge_thickness_parameters=ThicknessParameters(const=0.03, z=3, diffdir=0,
-                                                                                        stroke_curvature=0),
-                                 streamline_thickness_parameters=ThicknessParameters(const=0.01, z=0.1, diffdir=0,
-                                                                                     stroke_curvature=0),
-                                 uv_primary_trim_size=200,
-                                 uv_secondary_trim_size=20,
-                                 lighting_parameters=LightingParameters(diffdir=1, shadow=1, ao=1,
-                                                                        threshold=0.3),
-                                 stipple_parameters=StippleParameters(head_radius=3, tail_radius=3, length=0,
-                                                                      density_fn_min=0.005,
-                                                                      density_fn_factor=0.0025,
-                                                                      density_fn_exponent=2),
-                                 optimise_clip_paths=False)
+    def __init__(self, settings):
+        self.settings = settings
 
         self.surface = Surface()
-        self.surface.init_obj_image(os.path.join(self.img_dir, "IndexOB0001.png"))
-        self.surface.init_z_image(os.path.join(self.img_dir, "Depth0001.png"))
-        self.surface.init_diffdir_image(os.path.join(self.img_dir, "DiffDir0001.png"))
-        self.surface.init_norm_image(os.path.join(self.img_dir, "Normal0001.tif"))
-        self.surface.init_uv_image(os.path.join(self.img_dir, "UV0001.tif"))
-        self.surface.init_shadow_image(os.path.join(self.img_dir, "Shadow0001.png"))
-        self.surface.init_ao_image(os.path.join(self.img_dir, "AO0001.png"))
+        self.surface.init_obj_image(os.path.join(self.settings.in_path, "IndexOB0001.png"))
+        self.surface.init_z_image(os.path.join(self.settings.in_path, "Depth0001.png"))
+        self.surface.init_diffdir_image(os.path.join(self.settings.in_path, "DiffDir0001.png"))
+        self.surface.init_norm_image(os.path.join(self.settings.in_path, "Normal0001.tif"))
+        self.surface.init_uv_image(os.path.join(self.settings.in_path, "UV0001.tif"))
+        self.surface.init_shadow_image(os.path.join(self.settings.in_path, "Shadow0001.png"))
+        self.surface.init_ao_image(os.path.join(self.settings.in_path, "AO0001.png"))
 
         illustration_dimensions = (self.surface.obj_image.shape[1],
                                    self.surface.obj_image.shape[0])
-        self.illustration = svgwrite.Drawing(os.path.join(self.img_dir, self.out_filename), illustration_dimensions)
+        self.illustration = svgwrite.Drawing(os.path.join(self.settings.in_path, self.settings.out_filename),
+                                             illustration_dimensions)
 
         self.intersect_boundaries = []
 
@@ -139,35 +39,42 @@ class Illustrator:
         clip_path = self.illustration.defs.add(self.illustration.clipPath(id='silhouette_clip_path'))
         clip_path.add(svgwrite.path.Path(silhouette.clip_path_d))
 
-        internal_edges = InternalEdges(surface=self.surface, settings=self.settings)
-        internal_edges.generate()
-        [self.illustration.add(svg_stroke) for svg_stroke in internal_edges.svg_strokes]
+        if self.settings.enable_internal_edges:
+            internal_edges = InternalEdges(surface=self.surface, settings=self.settings)
+            internal_edges.generate()
+            [self.illustration.add(svg_stroke) for svg_stroke in internal_edges.svg_strokes]
 
-        # streamlines = Streamlines(surface=self.surface, settings=self.settings)
-        # streamlines.generate()
-        # [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
+        if self.settings.enable_streamlines:
+            streamlines = Streamlines(surface=self.surface, settings=self.settings)
+            streamlines.generate()
+            [self.illustration.add(svg_stroke) for svg_stroke in streamlines.svg_strokes]
 
-        stipples = Stipples(clip_path=clip_path, intersect_boundaries=self.intersect_boundaries,
-                            surface=self.surface, settings=self.settings)
-        stipples.generate()
-        [self.illustration.add(svg_stroke) for svg_stroke in stipples.svg_strokes]
+        if self.settings.enable_stipples:
+            stipples = Stipples(clip_path=clip_path, intersect_boundaries=self.intersect_boundaries,
+                                surface=self.surface, settings=self.settings)
+            stipples.generate()
+            [self.illustration.add(svg_stroke) for svg_stroke in stipples.svg_strokes]
 
     def save(self):
         self.illustration.save()
 
-        logger.info("Illustration saved to: %s", os.path.join(self.img_dir, self.out_filename))
+        logger.info("Illustration saved to: %s", os.path.join(self.settings.in_path, self.settings.out_filename))
 
 
 if __name__ == "__main__":
     # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy_scaledx", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_polar", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/catenoid", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/cosinus", "Illustration.svg")
     # illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
     # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
-    illustrator = Illustrator("/tmp/teapot", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/test", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/bump", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/flat", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/sphere", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/surface_1D_curvature", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/teapot", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/thinker", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/taranaki", "Illustration.svg")
     # illustrator = Illustrator("/tmp/human", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/brooklynbridge", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/lion", "Illustration.svg")
+    # illustrator = Illustrator("/tmp/colosseum", "Illustration.svg")
     illustrator.illustrate()
     illustrator.save()

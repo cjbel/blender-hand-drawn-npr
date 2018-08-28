@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Define expected render passes.
 pass_names = [
+    "Image",
     "Depth",
     "Normal",
     "UV",
@@ -73,6 +74,30 @@ def toggle_system(self, context):
         layer.use_pass_ambient_occlusion = True
         bpy.ops.wm.create_npr_compositor_nodes()
 
+        # TODO: For eval renders, don't really need this here for release.
+        bpy.context.scene.world.light_settings.use_ambient_occlusion = True
+        bpy.context.scene.world.light_settings.ao_factor = 0.1
+        material = bpy.data.materials.new(name="NPR")
+        material.diffuse_color = (1, 1, 1)
+        for n, object in enumerate(context.scene.objects):
+            if object.type == 'MESH':
+                # Assign it to object
+                if object.data.materials:
+                    # assign to 1st material slot
+                    object.data.materials[0] = material
+                else:
+                    # no slots
+                    object.data.materials.append(material)
+
+        bpy.context.scene.world.cycles_visibility.camera = True
+        bpy.context.scene.world.cycles_visibility.diffuse = False
+        bpy.context.scene.world.cycles_visibility.glossy = False
+        bpy.context.scene.world.cycles_visibility.transmission = False
+        bpy.context.scene.world.cycles_visibility.scatter = False
+        bpy.context.scene.world.horizon_color = (1, 1, 1)
+        bpy.context.scene.cycles.diffuse_samples = 20
+        bpy.context.scene.cycles.ao_samples = 20
+
         # Assign a (non-zero) object id to each geometry object in the scene.
         # TODO: Silhouette drawing needs knowledge of the corresponding grey level in the indexOB map, which is
         # based on this index. It would be better to allow the User to select the Subject of the render, then assign
@@ -82,6 +107,7 @@ def toggle_system(self, context):
                 index = n + 1
                 logger.debug("Assigning pass index %d to object: %s", index, object.name)
                 object.pass_index = n + 1
+                object.data.materials.append()
 
         bpy.app.handlers.render_post.append(process_illustration)
     else:

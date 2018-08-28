@@ -4,8 +4,9 @@
 **/*.pdf
 **/*.bcf
 **/*.run.xml
+**/
 
-blend_files/img
+renders/**/*.png
 **.blend1
 
 .pytest_cache/

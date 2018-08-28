@@ -30,7 +30,12 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "uv_secondary_trim_size",
                                    "lighting_parameters",
                                    "stipple_parameters",
-                                   "optimise_clip_paths"])
+                                   "optimise_clip_paths",
+                                   "enable_internal_edges",
+                                   "enable_streamlines",
+                                   "enable_stipples",
+                                   "in_path",
+                                   "out_filename"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -116,10 +121,8 @@ class Path:
         corners = []
         for i, subpix_rc in enumerate(subpix_rcs):
             if np.isnan(subpix_rc).any():
-                # corners.append(tuple(corner_rcs[i].tolist()))
                 corners.append((corner_rcs[i][1], corner_rcs[i][0]))
             else:
-                # corners.append(tuple(subpix_rc.tolist()))
                 corners.append((subpix_rc[1], subpix_rc[0]))
 
         return tuple(corners)
@@ -129,6 +132,15 @@ class Path:
         :param corners:
         :return: New Path objects, each representing a distinct edge.
         """
+
+        corners = list(corners)
+
+        # Check whether the path is discontinuous - if so, we should consider the ends of the path as corners for the
+        # purposes of path splitting.
+        if self.points[0] != self.points[-1]:
+            corners.append(self.points[0])
+            corners.append(self.points[-1])
+
         # Identify the index of each corner in this Path.
         corner_indices = []
         for corner in corners:

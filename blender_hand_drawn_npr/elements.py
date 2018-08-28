@@ -5,7 +5,7 @@ import numpy as np
 import svgpathtools as svgp
 import svgwrite
 from scipy import stats, ndimage
-from skimage import measure, util, feature, morphology, graph
+from skimage import measure, util, feature, morphology, graph, draw, filters
 
 from blender_hand_drawn_npr.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
 from blender_hand_drawn_npr.variable_density import moving_front_nodes
@@ -56,6 +56,19 @@ class Silhouette:
         Make all such classes which produce paths implement this method to allow for polymorphic calls?
         :return: A collection of Paths which encompass the silhouette of the render subject.
         """
+
+        # # HOTFIX: Place a 1px black border around the object image prior to feeding it to find_contours.
+        # # If the render subject is cropped off the screen, this will guarantee that the silhouette is continuous within,
+        # # the image dimensions which is important since the area within the silhouette curves are used as the
+        # # clipping envelope! This is a late-minute bodge...
+        # r_max = self.surface.obj_image.shape[0] - 1
+        # c_max = self.surface.obj_image.shape[1] - 1
+        # rr, cc = draw.polygon_perimeter((0, 0, r_max, r_max), (0, c_max, c_max, 0))
+        # fixed_obj_image = self.surface.obj_image
+        # fixed_obj_image[rr, cc] = 0
+
+        # from skimage import filters
+        # image = filters.gaussian(self.surface.obj_image, 3)
 
         contours = measure.find_contours(self.surface.obj_image, 0.99)
 
@@ -169,6 +182,10 @@ class InternalEdges:
 
         for region in measure.regionprops(labels):
             image = region.image
+
+            if image.shape < (3, 3):
+                continue
+
             # Condition the line to ensure each cell has only one or two neighbours (remove "L"s).
             image = morphology.skeletonize(image)
 
@@ -183,7 +200,9 @@ class InternalEdges:
 
             # Extract the region coordinates of cells which meet the condition for being a start/end position.
             terminator_pair = np.argwhere(convolved == 1)
-            if not len(terminator_pair):
+
+            if len(terminator_pair) < 2:
+                # Unable to extract two meaningful points.
                 continue
 
             # Make edges have a value of 0 ("cheap").
