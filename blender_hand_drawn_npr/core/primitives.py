@@ -1,6 +1,6 @@
 import logging
 import math
-from collections import deque, namedtuple
+from collections import deque
 
 import numpy as np
 import svgpathtools as svgp
@@ -8,51 +8,12 @@ import svgwrite
 from more_itertools import unique_everseen
 from scipy import arange, spatial
 from scipy.interpolate import interp1d
-from skimage import measure, filters, morphology, util
+from skimage import measure, util
 from skimage.feature import corner_harris, corner_peaks, corner_subpix
 
-import blender_hand_drawn_npr.PathFitter as pf
+import blender_hand_drawn_npr.third_party.PathFitter as pf
 
 logger = logging.getLogger(__name__)
-
-Settings = namedtuple("Settings", ["cull_factor",
-                                   "optimise_factor",
-                                   "curve_fit_error",
-                                   "harris_min_distance",
-                                   "subpix_window_size",
-                                   "curve_sampling_interval",
-                                   "stroke_colour",
-                                   "streamline_segments",
-                                   "silhouette_thickness_parameters",
-                                   "internal_edge_thickness_parameters",
-                                   "streamline_thickness_parameters",
-                                   "uv_primary_trim_size",
-                                   "uv_secondary_trim_size",
-                                   "lighting_parameters",
-                                   "stipple_parameters",
-                                   "optimise_clip_paths",
-                                   "enable_internal_edges",
-                                   "enable_streamlines",
-                                   "enable_stipples",
-                                   "in_path",
-                                   "out_filename"])
-
-ThicknessParameters = namedtuple("ThicknessParameters", ["const",
-                                                         "z",
-                                                         "diffdir",
-                                                         "stroke_curvature"])
-
-LightingParameters = namedtuple("LightingParameters", ["diffdir",
-                                                       "shadow",
-                                                       "ao",
-                                                       "threshold"])
-
-StippleParameters = namedtuple("StippleParameters", ["head_radius",
-                                                     "tail_radius",
-                                                     "length",
-                                                     "density_fn_min",
-                                                     "density_fn_factor",
-                                                     "density_fn_exponent"])
 
 
 class Path:
@@ -221,24 +182,17 @@ class Path:
         points = list(self.__points)
 
         image = surface.z_image
-        # We want to push coordinates to lower depth values, so make sure the background is set low.
-        # image[[util.invert(surface.obj_image.astype(bool))]] = 0
 
         window_shape = (3, 3)
         windows = util.view_as_windows(image, window_shape)
 
         for i, point in enumerate(points):
-            # print("Point coord: ", point)
             query_coord = (point[1] - 1, point[0] - 1)
-            # print("Query coord: ", query_coord)
             local_window = windows[query_coord]
-            # print(local_window)
 
             indices = np.where(local_window == local_window.min())
             local_coords = indices[0][0], indices[1][0]
-            # print("Local coord: ", local_coords)
             global_coords = local_coords[0] + query_coord[0], local_coords[1] + query_coord[1]
-            # print("Global coord: ", global_coords)
 
             points[i] = global_coords[1], global_coords[0]
 
@@ -349,29 +303,7 @@ class Path:
         for i in range(nonzero_idx[0][-1], len(first_derivatives)):
             smoothed.append(0)
 
-        # from matplotlib import pyplot
-        # pyplot.plot(first_derivatives)
-        # pyplot.plot(smoothed)
-        # pyplot.show()
-
         self._curvatures = smoothed
-
-    # def compute_thicknesses(self, surface, thickness_parameters):
-    # thicknesses = []
-    # for i, point in enumerate(self.__points):
-    #     constant_component = thickness_parameters.const
-    #     surface_data = surface.at_point(point[0], point[1])
-    #     z_component = (1 - surface_data.z) * thickness_parameters.z
-    #     diffdir_component = (1 - surface_data.diffdir) * thickness_parameters.diffdir
-    #     try:
-    #         curvature_component = self._curvatures[i] * thickness_parameters.curvature
-    #     except (IndexError, TypeError):
-    #         curvature_component = 0
-    #
-    #     thickness = constant_component + z_component + diffdir_component + curvature_component
-    #     thicknesses.append(thickness)
-    #
-    # self._thicknesses = tuple(thicknesses)
 
     def compute_offset_vector(self, surface, thickness_parameters):
         offsets = []
@@ -385,7 +317,6 @@ class Path:
             offsets.append(thickness)
 
         offsets = tuple(offsets)
-        # logger.debug("Offset vector: %s", offsets)
 
         self.__offset_vector = tuple(offsets)
 
@@ -417,7 +348,6 @@ class Curve1D:
         curve_start_index = self.d.index("C")
         self.d_m = self.d[0:curve_start_index - 1]
         self.d_c = self.d[curve_start_index:]
-        # logger.debug("Path fit complete...")
 
     def offset(self, interval, hifi_path, thickness_parameters, surface, positive_direction=True):
 
@@ -436,20 +366,16 @@ class Curve1D:
             # logger.debug("Processing segment: %d/%d", i, len(svg_path))
             # Determine by how much the segment parametrisation, t, should be incremented between construction Points.
             # Note: svgpathtools defines t, over the domain 0 <= t <= 1.
-            # logger.debug("Segment length: %f", segment.length())
             t_step = interval / segment.length()
-            # logger.debug("T Step: %f", t_step)
 
             # Generate a list of parameter values. To avoid duplicate construction Points between segments, ensure the
             # endpoint of a segment (t = 1) is captured only if processing the final segment of the overall
             # construction curve.
             t = arange(0, 1, t_step)
-            # logger.debug("T list: %s", t)
             if i == len(svgp.parse_path(self.d)) - 1 and (1 not in t):
                 t = np.append(t, 1)
 
             for step in t:
-                # logger.debug("Step: %f", step)
                 # Extract the coordinates at this t-step.
                 interval_point = [segment.point(step).real, segment.point(step).imag]
                 self.__interval_points.append(interval_point)
@@ -484,8 +410,6 @@ class Curve1D:
             offset_points = np.array(self.__offset_points)
             offset_points = np.flip(offset_points, 0)
             self.__offset_points = list(offset_points)
-
-        # logger.debug("Offset complete.")
 
         return Path(self.__offset_points)
 
@@ -536,8 +460,6 @@ class CurvedStroke:
         # Call to either tostring or to_xml() is needed to create the dict 'd' attribute.
         p.tostring()
         self.d = p.attribs['d']
-
-        # logger.debug("Generate complete.")
 
 
 class DirectionalStippleStroke:
@@ -630,7 +552,6 @@ class DirectionalStippleStroke:
         return vertices
 
     def __generate(self):
-        logger.debug("Starting generate...")
 
         # Define the parameterised stroke outline.
 

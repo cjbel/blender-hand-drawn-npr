@@ -5,10 +5,10 @@ import numpy as np
 import svgpathtools as svgp
 import svgwrite
 from scipy import stats, ndimage
-from skimage import measure, util, feature, morphology, graph, draw, filters
+from skimage import measure, util, feature, morphology, graph
 
-from blender_hand_drawn_npr.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
-from blender_hand_drawn_npr.variable_density import moving_front_nodes
+from blender_hand_drawn_npr.core.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
+from blender_hand_drawn_npr.third_party.variable_density import moving_front_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -57,22 +57,9 @@ class Silhouette:
         :return: A collection of Paths which encompass the silhouette of the render subject.
         """
 
-        # # HOTFIX: Place a 1px black border around the object image prior to feeding it to find_contours.
-        # # If the render subject is cropped off the screen, this will guarantee that the silhouette is continuous within,
-        # # the image dimensions which is important since the area within the silhouette curves are used as the
-        # # clipping envelope! This is a late-minute bodge...
-        # r_max = self.surface.obj_image.shape[0] - 1
-        # c_max = self.surface.obj_image.shape[1] - 1
-        # rr, cc = draw.polygon_perimeter((0, 0, r_max, r_max), (0, c_max, c_max, 0))
-        # fixed_obj_image = self.surface.obj_image
-        # fixed_obj_image[rr, cc] = 0
-
-        # from skimage import filters
-        # image = filters.gaussian(self.surface.obj_image, 3)
-
         contours = measure.find_contours(self.surface.obj_image, 0.99)
 
-        # find_contours may return more than one contour set. The "correct" contour is generally the longest path in
+        # find_contours may return more than one contour set. Assume the "correct" contour is the longest path in
         # the set.
         contour = max(contours, key=len)
 
@@ -111,39 +98,6 @@ class Silhouette:
             svg_stroke.push(stroke.d)
             self.svg_strokes.append(svg_stroke)
 
-            # #####################################################################################
-            # # TODO: THIS BLOCK IS FOR TESTING.
-            #
-            # curve = Curve1D(path=path, fit_error=self.settings.curve_fit_error)
-            # svg_stroke = svgwrite.path.Path(stroke="black", fill="none", stroke_width=0.2)
-            # svg_stroke.push(curve.d)
-            # self.svg_strokes.append(svg_stroke)
-            #
-            # offset_path_upper = curve.offset(interval=self.settings.curve_sampling_interval,
-            #                                  surface=self.surface,
-            #                                  thickness_parameters=self.settings.thickness_parameters,
-            #                                  positive_direction=True)
-            # for point in offset_path_upper.points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="magenta"))
-            #
-            # offset_path_lower = curve.offset(interval=self.settings.curve_sampling_interval,
-            #                                  surface=self.surface,
-            #                                  thickness_parameters=self.settings.thickness_parameters,
-            #                                  positive_direction=False)
-            # for point in offset_path_lower.points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=0.5, fill="pink"))
-            #
-            # upper_curve = Curve1D(path=offset_path_upper, fit_error=self.settings.curve_fit_error)
-            # svg_stroke = svgwrite.path.Path(stroke="blue", fill="none", stroke_width=0.2)
-            # svg_stroke.push(upper_curve.d)
-            # self.svg_strokes.append(svg_stroke)
-            #
-            # lower_curve = Curve1D(path=offset_path_lower, fit_error=self.settings.curve_fit_error)
-            # svg_stroke = svgwrite.path.Path(stroke="teal", fill="none", stroke_width=0.2)
-            # svg_stroke.push(lower_curve.d)
-            # self.svg_strokes.append(svg_stroke)
-            # #####################################################################################
-
             logger.info("Silhouette Strokes prepared: %d", len(self.svg_strokes))
 
         self.__generate_clip_path()
@@ -161,24 +115,14 @@ class InternalEdges:
         self.svg_strokes = []
 
     def __find_paths(self):
+
+        logger.debug("Generating Internal Edges...")
+
         # By using the object image as a mask we find only internal edges and disregard silhouette edges.
         edge_image = feature.canny(self.surface.z_image, sigma=1, mask=self.surface.obj_image.astype(bool))
 
         # Identify all continuous lines.
         labels = measure.label(edge_image, connectivity=2)
-
-        # # Plot the discovered regions.
-        # image_label_overlay = color.label2rgb(labels, image=edge_image)
-        # fig, ax = plt.subplots(figsize=(10, 6))
-        # ax.imshow(image_label_overlay)
-        # for region in measure.regionprops(labels):
-        #     minr, minc, maxr, maxc = region.bbox
-        #     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-        #                               fill=False, edgecolor='yellow', linewidth=0.25)
-        #     ax.add_patch(rect)
-        # ax.set_axis_off()
-        # plt.tight_layout()
-        # plt.show()
 
         for region in measure.regionprops(labels):
             image = region.image
@@ -283,11 +227,6 @@ class Streamlines:
             u_streamline.generate()
             strokes += u_streamline.strokes
 
-            # # TODO: For debug visualisation only.
-            # for path in u_streamline.paths:
-            #     for point in path.points:
-            #         self.svg_strokes.append(svgwrite.shapes.Circle((str(point[0]), str(point[1])), r=2, fill="red"))
-
         for intensity in v_intensities:
             norm_image_component = self.surface.norm_y_image
             logger.debug("Creating (v) streamline at intensity %d...", intensity)
@@ -300,18 +239,10 @@ class Streamlines:
             v_streamline.generate()
             strokes += v_streamline.strokes
 
-            # # TODO: For debug visualisation only.
-            # for path in v_streamline.paths:
-            #     for point in path.points:
-            #         self.svg_strokes.append(svgwrite.shapes.Circle((str(point[0]), str(point[1])), r=2, fill="green"))
-
         for stroke in strokes:
             svg_stroke = svgwrite.path.Path(fill=self.settings.stroke_colour, stroke_width=0)
             svg_stroke.push(stroke.d)
             self.svg_strokes.append(svg_stroke)
-
-            # for point in stroke.upper_curve.path.points:
-            #     self.svg_strokes.append(svgwrite.shapes.Circle((point[0], point[1]), r=1, fill="magenta"))
 
         logger.info("Streamline Strokes prepared: %d", len(self.svg_strokes))
 
@@ -341,11 +272,12 @@ class Streamline:
             # Create the rough path.
             path = Path([[coord[1], coord[0]] for coord in contour])
             # Condition and create final paths.
-            paths = path.round().bump(self.surface).remove_dupes().trim_uv(target_intensity=self.intensity,
-                                                                           primary_image=self.primary_uv_image_component,
-                                                                           secondary_image=self.secondary_uv_image_component,
-                                                                           primary_trim_size=self.settings.uv_primary_trim_size,
-                                                                           secondary_trim_size=self.settings.uv_secondary_trim_size)
+            paths = path.round().bump(self.surface).remove_dupes() \
+                .trim_uv(target_intensity=self.intensity,
+                         primary_image=self.primary_uv_image_component,
+                         secondary_image=self.secondary_uv_image_component,
+                         primary_trim_size=self.settings.uv_primary_trim_size,
+                         secondary_trim_size=self.settings.uv_secondary_trim_size)
 
             for path in paths:
                 logger.debug("UV contour split into %d paths.", len(paths))
@@ -443,19 +375,6 @@ class Stipples:
 
         # Extract the list of node coordinates from the image.
         nodes = np.argwhere(image)
-
-        import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(14, 8))
-        ax1 = fig.add_subplot(1, 1, 1)
-        plt.rc('figure', figsize=(12.0, 12.0))
-        # node layout
-        ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
-        ax1.axis("image")
-        ax1.set_xlim(0, x_res)
-        ax1.set_ylim(0, y_res)
-        ax1.set_title("Threshold: " + str(threshold))
-        ax1.invert_yaxis()
-        plt.show()
 
         u_image = self.surface.u_image
         v_image = self.surface.v_image

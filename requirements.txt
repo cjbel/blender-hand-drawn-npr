@@ -2,7 +2,5 @@ scikit-image
 imageio
 tifffile
 svgwrite
-rdp
 svgpathtools
-simplification
 more-itertools

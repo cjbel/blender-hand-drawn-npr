@@ -3,9 +3,47 @@ from collections import namedtuple
 
 import imageio
 from skimage import io, exposure
-import numpy as np
 
 logger = logging.getLogger(__name__)
+
+Settings = namedtuple("Settings", ["cull_factor",
+                                   "optimise_factor",
+                                   "curve_fit_error",
+                                   "harris_min_distance",
+                                   "subpix_window_size",
+                                   "curve_sampling_interval",
+                                   "stroke_colour",
+                                   "streamline_segments",
+                                   "silhouette_thickness_parameters",
+                                   "internal_edge_thickness_parameters",
+                                   "streamline_thickness_parameters",
+                                   "uv_primary_trim_size",
+                                   "uv_secondary_trim_size",
+                                   "lighting_parameters",
+                                   "stipple_parameters",
+                                   "optimise_clip_paths",
+                                   "enable_internal_edges",
+                                   "enable_streamlines",
+                                   "enable_stipples",
+                                   "in_path",
+                                   "out_filename"])
+
+ThicknessParameters = namedtuple("ThicknessParameters", ["const",
+                                                         "z",
+                                                         "diffdir",
+                                                         "stroke_curvature"])
+
+LightingParameters = namedtuple("LightingParameters", ["diffdir",
+                                                       "shadow",
+                                                       "ao",
+                                                       "threshold"])
+
+StippleParameters = namedtuple("StippleParameters", ["head_radius",
+                                                     "tail_radius",
+                                                     "length",
+                                                     "density_fn_min",
+                                                     "density_fn_factor",
+                                                     "density_fn_exponent"])
 
 
 class Surface:
@@ -36,8 +74,6 @@ class Surface:
         logger.info("Z image loaded: %s", file_path)
 
     def init_diffdir_image(self, file_path):
-        # # 16-bit colour-depth, use imageio.
-        # self.diffdir_image = imageio.imread(file_path, as_gray=True)
         self.diffdir_image = io.imread(file_path, as_gray=True)
         logger.info("Diffdir image loaded: %s", file_path)
 

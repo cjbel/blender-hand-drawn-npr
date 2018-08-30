@@ -3,9 +3,8 @@ import os
 
 import svgwrite
 
-from blender_hand_drawn_npr.elements import Silhouette, InternalEdges, Streamlines, Stipples
-from blender_hand_drawn_npr.models import Surface
-from blender_hand_drawn_npr.primitives import Settings, ThicknessParameters, LightingParameters, StippleParameters
+from blender_hand_drawn_npr.core.elements import Silhouette, InternalEdges, Streamlines, Stipples
+from blender_hand_drawn_npr.core.models import Surface
 
 logger = logging.getLogger(__name__)
 
@@ -62,19 +61,38 @@ class Illustrator:
 
 
 if __name__ == "__main__":
-    # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_xy_scaledx", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/hyperbolic_paraboloid_polar", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/catenoid", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/cosinus", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/undulating_plane", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/bump_plane_ortho_uv", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/teapot", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/thinker", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/taranaki", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/human", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/brooklynbridge", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/lion", "Illustration.svg")
-    # illustrator = Illustrator("/tmp/colosseum", "Illustration.svg")
+
+    from blender_hand_drawn_npr.core.models import Settings, LightingParameters, StippleParameters, ThicknessParameters
+
+    settings = Settings(out_filename="out.svg",
+                        cull_factor=50,
+                        optimise_factor=5,
+                        curve_fit_error=0.01,
+                        harris_min_distance=40,
+                        subpix_window_size=20,
+                        curve_sampling_interval=20,
+                        stroke_colour="black",
+                        streamline_segments=64,
+                        silhouette_thickness_parameters=ThicknessParameters(const=0.05, z=5, diffdir=0,
+                                                                            stroke_curvature=0),
+                        internal_edge_thickness_parameters=ThicknessParameters(const=0.05, z=3, diffdir=0,
+                                                                               stroke_curvature=0),
+                        streamline_thickness_parameters=ThicknessParameters(const=0, z=0.5, diffdir=1,
+                                                                            stroke_curvature=0),
+                        uv_primary_trim_size=200,
+                        uv_secondary_trim_size=20,
+                        lighting_parameters=LightingParameters(diffdir=1.5, shadow=1, ao=2,
+                                                               threshold=0.25),
+                        stipple_parameters=StippleParameters(head_radius=1, tail_radius=0, length=40,
+                                                             density_fn_min=0.005,
+                                                             density_fn_factor=0.0025,
+                                                             density_fn_exponent=2),
+                        optimise_clip_paths=True,
+                        enable_internal_edges=True,
+                        enable_streamlines=False,
+                        enable_stipples=False,
+                        in_path="/tmp/")
+
+    illustrator = Illustrator(settings)
     illustrator.illustrate()
     illustrator.save()
