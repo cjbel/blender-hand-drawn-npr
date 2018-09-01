@@ -18,15 +18,15 @@ function cleanup {
 cleanup
 
 # Proceed to build the output file.
-pdflatex -interaction=nonstopmode $MAIN_FILE
+pdflatex --shell-escape -interaction=nonstopmode $MAIN_FILE
 
 # Only proceed with remaining build stages if the above build was successful.
 if [ $? -eq 0 ]; then
 	# Generate bbl from aux.
 	bibtex $MAIN_FILE
 	# Final builds to generate TOC, references etc.
-	pdflatex -interaction=nonstopmode $MAIN_FILE
-	pdflatex -interaction=nonstopmode $MAIN_FILE
+	pdflatex --shell-escape -interaction=nonstopmode $MAIN_FILE
+	pdflatex --shell-escape -interaction=nonstopmode $MAIN_FILE
 	# Not required, but keeps the directory free of messy files.
 	cleanup
 	# Rename output file.

@@ -8,7 +8,7 @@ from scipy import stats, ndimage
 from skimage import measure, util, feature, morphology, graph
 
 from blender_hand_drawn_npr.core.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
-from blender_hand_drawn_npr.third_party.variable_density import moving_front_nodes
+from blender_hand_drawn_npr.core.third_party.variable_density import moving_front_nodes
 
 logger = logging.getLogger(__name__)
 

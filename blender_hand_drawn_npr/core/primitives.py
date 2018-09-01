@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 from skimage import measure, util
 from skimage.feature import corner_harris, corner_peaks, corner_subpix
 
-import blender_hand_drawn_npr.third_party.PathFitter as pf
+import blender_hand_drawn_npr.core.third_party.PathFitter as pf
 
 logger = logging.getLogger(__name__)
 

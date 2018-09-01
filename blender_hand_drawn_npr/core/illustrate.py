@@ -96,3 +96,7 @@ if __name__ == "__main__":
     illustrator = Illustrator(settings)
     illustrator.illustrate()
     illustrator.save()
+
+    import svgpathtools as svgp
+
+    svgp.misctools.open_in_browser("/tmp/out.svg")

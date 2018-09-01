@@ -18,3 +18,10 @@
 % - Levels of abstraction between modules.
 
 % - Logging.
+
+The final system architecture diagram is presented in Appendix \ref{appendix_design}.
+
+A key requirement is for the System to be integrated with Blender as an add-on. 
+Blender's add-on infrastructure has certain expectations\footnote{\url{https://wiki.blender.org/wiki/Process/Addons/Guidelines}} which govern how a potential add-on should be structured, and these aspects had to be considered at an early design stage.
+
+This presented an initial challenge - although Blender's API documentation provides guidance\footnote{\url{https://docs.blender.org/manual/en/dev/advanced/scripting/addon_tutorial.html}} applicable to trivial (single-file) add-ons, there is limited information available for structuring more advanced multi-file add-ons.

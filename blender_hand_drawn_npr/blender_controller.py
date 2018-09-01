@@ -4,10 +4,11 @@ else:
     try:
         from .core.illustrate import Illustrator
         from .core.models import Settings, ThicknessParameters, LightingParameters, StippleParameters
-    # except (ValueError):
-    except (AttributeError, ImportError):
-# This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
-# This is fine, since only the internal Blender functionality is tested.
+    except (ValueError):
+    # except (AttributeError, ImportError):
+        print("Core imports failed!")
+        # This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
+        # This is fine, since only the internal Blender functionality is tested.
 
 import bpy
 import os
@@ -70,9 +71,9 @@ def process_illustration(dummy):
                             streamline_segments=system_settings.streamline_segments,
                             streamline_thickness_parameters=streamline_thickness_parameters,
                             enable_stipples=system_settings.is_stipples_enabled,
-                            optimise_clip_paths=system_settings.is_optimisation_enabled,
                             lighting_parameters=lighting_parameters,
                             stipple_parameters=stipple_parameters,
+                            optimise_clip_paths=system_settings.is_optimisation_enabled,
                             # Note: Remaining values hard-coded to sensible defaults. Minimal benefit to exposing
                             # these in UI.
                             cull_factor=20,
@@ -84,11 +85,13 @@ def process_illustration(dummy):
                             uv_primary_trim_size=200,
                             uv_secondary_trim_size=20)
 
+        logger.debug("Starting illustrator...")
         illustrator = Illustrator(settings)
 
     except (NameError):
         # This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
         # Bail out here, since only the internal Blender functionality is tested.
+        logger.warning("process_illustration threw exception!")
         return
 
     logger.debug("Processing Illustration...")

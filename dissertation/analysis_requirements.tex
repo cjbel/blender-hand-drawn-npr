@@ -37,33 +37,59 @@
 % Illustrations convey information better, consume less storage, are more easily reproduced, are more capable of conveying information at various levels of detail, and are in many respects more attractive than photo realistic images.
 
 A two-dimensional image has the power to communicate complex multi-dimensional information about its subject.
-An accurate depiction may convey the subject's form, texture, and depth relationship to other objects, which in turn allows us to intuitively build a mental model of the scene.
+An accurate depiction may convey a subject's form, texture, and depth relationship to other objects, which in turn allows us to intuitively build a mental model of a scene.
 
 For this to be achieved effectively, the style in which an image is produced must be selected appropriately based upon the communicational goals of the artist.
 For example, a traditional landscape watercolourist, technical writer, or marketeer all may wish to convey information about a given subject - all however will have substantially different goals.
 
 This disjoint in user requirements is particularly interesting when it comes to production of computer generated graphics, of which the majority of development has focussed upon producing photorealistic images.
-Photorealism may be perfect for the automotive marketeer who wishes to present car designs to the public, however such an approach is less well suited to the technical manuals of the same car, where the goal is to accurately convey fit, form and function of mechanical parts.
+Photorealism may be perfect for the automotive marketeer who wishes to present car designs to the public, however such an approach is less well-suited to the technical manuals of the same car, where the goal is to accurately convey fit, form and function of mechanical parts.
 Indeed, the medium upon which the image is to be delivered also plays an important role.
 For example, a high-resolution, full-colour, photorealistic image may be appropriate for a magazine. 
 A more abstract representation of the same parts may better convey the details required of the monochrome technical manual, where knowledge of surface texture and glossiness at best fail to add value, at worst may even distract the reader.
 
-The aim of the field of Non-Photorealistic Rendering (NPR) is to produce computer-generated images based upon the principles of traditional or digital art.
-Styles attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; drawing techniques such as stippling and pen-and-ink; and 3D shading techniques such as cel-shading and Gooch shading.
+Indeed, such non-photorealistic techniques have historically been used to great effect in technical disicplines such as engineering (\cite{porter1988}) and mathematics (\cite{francis2007}), where precise communication of the specitivies of structure is paramount. Styles can also be tailored to suit less obvious needs - for example, compared to photorealism, bolder styles can have benefits in terms of reduced degradation of image detail when subject to multiple stages of reproduction. Subtler styles can be applied to achieve effective results with very limited use of colour and ink, leading to improved economy for high-volume printing.
+
+The aim of the field of Non-Photorealistic Rendering (NPR) is to produce computer-generated images based upon such principles of traditional or digital art.
+Styles theorteically attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; pen-and-ink techniques such as stippling and cross-hatching; and 3D shading techniques such as cel-shading.
 Styles themselves may be manipulated by the artist to add expression - focusing the viewer's attention to areas of particular importance, whilst abstracting away unnecessary detail.
-As such, compared to photorealism, NPR techniques allow certain classes of visual information to be effectively conveyed in-line with the communicational goals of the artist.
+As such, compared to photorealism, traditional techniques realised through NPR allow certain classes of visual information to be effectively conveyed in-line with the communicational goals of the artist.
 
-\section{Problem Definition}
-% Something needed to introduce the core use case - images for monochrome academic papers?
+\section{State of the Art}
 
-Blender\footnotemark is a software package with capability for 2D sketching, 3D modelling, animation, physics simulation and rendering.
+The previous section speaks to the benefit of traditional drawing styles, as realised through NPR. Unfortunately, actual implementation of NPR techniques in today's popular, widely available and easy to use rendering engines is limited, and often tailored to cartoon/anime styles (cel, Gooch shading).
+There is generally poor support for technical monochrome styles such as stippling and hatching, which is surprising given the strong tradition of such styles in technical disciplines.
+
+Blender\footnote{\url{https://www.blender.org}} is a software package with capability for 2D sketching, 3D modelling, animation, physics simulation and rendering.
 Licensed under the GNU General Public License, Blender is free to use and as such enjoys widespread adoption across multiple fields.
 The software ships with a powerful rendering engine named Cycles, which can be used to produce high-quality renders.
 As a physically-based, path-tracing rendering engine, Cycles aim is to accurately simulate the interaction of light with various kinds of materials.
-This makes Cycles well-suited for producing photorealistic renderings.
-A limited range of NPR styles are also possible with Cycles, however these are predominately ``cartoon'' styles.
+This makes Cycles well-suited for producing photorealistic renderings (Figure \ref{ex_photoreal}).
+A limited range of NPR styles are feasible with Cycles, however these are mostly suited to non-technical styles (Figure \ref{ex_stylised}).
 
-\footnotetext{}
+\begin{figure}[h]
+	\centering
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=4cm]{images/ex_photoreal}
+		\caption{Photorealistic.}\label{ex_photoreal}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=4cm]{images/ex_stylised}
+		\caption{Stylised.}\label{ex_stylised}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=4cm]{images/ex_hand_drawn}
+		\caption{Hand-drawn.}\label{ex_hand_drawn}
+	\end{subfigure}
+	\caption{Assorted rendering styles.\protect\footnotemark}
+\end{figure}
+
+\section{Problem Definition}
+
+As such, a project is undertaken to extend Blender, by means of developing an add-on, which allows the user to easily produce high-quality renders of traditional, hand-drawn appearance (Figure \ref{ex_hand_drawn}), through application of traditional monochrome drawing techniques according to a simple user-defined specification.
 
 \section{Aim \& Objectives}
+% 
 
+
+\footnotetext{Credits: Figure \ref{ex_photoreal}: Aorta (BlenderArtists.org), Figure \ref{ex_stylised}: Davide\_Pellino (BlenderArtists.org), Figure \ref{ex_hand_drawn}: \cite{francis2007}}
