@@ -64,21 +64,3 @@
 \global\let\date\relax
 \global\let\and\relax
 }
-
-\newcommand{\educationalconsent}{
-\newpage
-\section*{Education Use Consent}
-
-I hereby give my permission for this project to be shown to other
-University of Glasgow students and to be distributed in an electronic
-format.  \textbf{Please note that you are under no obligation to sign 
-this declaration, but doing so would help future students.}
-
-\begin{tabular}{@{}llll}
-      &                     &            &                     \\
-      &                     &            &                     \\
-Name: & \rule{4.0cm}{0.5mm} & Signature: & \rule{4.5cm}{0.5mm} \\
-      &                     &            &                     \\
-      &                     &            &                     \\
-\end{tabular}
-}

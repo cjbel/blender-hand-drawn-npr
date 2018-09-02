@@ -12,16 +12,21 @@
 
 \chapter{Design \& Implementation}\label{design_implementation}
 
+\section{Architecture \& Design Considerations}
 % - Design for blender plugin (multifile).
-% - Design considerations for testing (brief, cover testing in next section).
 % - Separation of blender-specific from backend.
+% - Design considerations for testing (brief, cover testing in next section).
 % - Levels of abstraction between modules.
 
+\footnote{\url{https://wiki.blender.org/wiki/Process/Addons/Guidelines}}
+\footnote{\url{https://docs.blender.org/manual/en/dev/advanced/scripting/addon_tutorial.html}}
+
+The system architecture diagram is presented in Appendix \ref{appendix_design}.
+
+\section{Implementation Details \& Challenges}
 % - Logging.
 
-The final system architecture diagram is presented in Appendix \ref{appendix_design}.
-
-A key requirement is for the System to be integrated with Blender as an add-on. 
-Blender's add-on infrastructure has certain expectations\footnote{\url{https://wiki.blender.org/wiki/Process/Addons/Guidelines}} which govern how a potential add-on should be structured, and these aspects had to be considered at an early design stage.
-
-This presented an initial challenge - although Blender's API documentation provides guidance\footnote{\url{https://docs.blender.org/manual/en/dev/advanced/scripting/addon_tutorial.html}} applicable to trivial (single-file) add-ons, there is limited information available for structuring more advanced multi-file add-ons.
+\section{Demonstration}
+% - UI.
+% - Sample renders.
+% - Performance.

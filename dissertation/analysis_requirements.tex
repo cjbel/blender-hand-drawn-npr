@@ -21,20 +21,6 @@
 \chapter{Analysis \& Requirements}\label{analysis_requirements}
 
 \section{Background}
-% Notes:
-% Emphasise important features, minimise extraneous detail.
-% ...images communicate surface shading and curvature, as well as the depth relationships of objects of a scene.
-% ..sometimes a realistic image may be less effective than a stylized image.
-% "The goal of effective representational image making, whether you pain in oil or in numbers, is to select and manipulate visual information in order to direct the viewer's attention and determine the viewer's perception". Margret Hagen, haeberli1990.
-% a good illustration depicts the target objects or scenes in such a way that all the extraneous details are simplified or removed whilst the salient features are preserved or emphasised.
-% ...wide range of styles...
-% less important regions may be purposely abstracted to communicate "important" features to the viewers more effectively.
-% Shape features can be readily understood if certain geometric properties are enhanced.
-% ...techniques for visually communicating ideas.
-% Illustrations offer many advantages over photorealism, including their ability to abstract away detail, clarify shapes, and focus attention.
-% In order to communicate truly complex information effectively, some form of visual abstraction is required. This type of abstraction has been studied most comprehensively in the fields of graphic design and traditional illustration.
-% Illustrations can convey information better by omitting extraneous detail, by focussing attention of relevant features, by simplifying and clarifying shapes
-% Illustrations convey information better, consume less storage, are more easily reproduced, are more capable of conveying information at various levels of detail, and are in many respects more attractive than photo realistic images.
 
 A two-dimensional image has the power to communicate complex multi-dimensional information about its subject.
 An accurate depiction may convey a subject's form, texture, and depth relationship to other objects, which in turn allows us to intuitively build a mental model of a scene.
@@ -48,27 +34,27 @@ Indeed, the medium upon which the image is to be delivered also plays an importa
 For example, a high-resolution, full-colour, photorealistic image may be appropriate for a magazine. 
 A more abstract representation of the same parts may better convey the details required of the monochrome technical manual, where knowledge of surface texture and glossiness at best fail to add value, at worst may even distract the reader.
 
-Indeed, such non-photorealistic techniques have historically been used to great effect in technical disicplines such as engineering (\cite{porter1988}) and mathematics (\cite{francis2007}), where precise communication of the specitivies of structure is paramount. Styles can also be tailored to suit less obvious needs - for example, compared to photorealism, bolder styles can have benefits in terms of reduced degradation of image detail when subject to multiple stages of reproduction. Subtler styles can be applied to achieve effective results with very limited use of colour and ink, leading to improved economy for high-volume printing.
+Indeed, such non-photorealistic techniques have historically been used to great effect in technical disciplines such as engineering (\cite{porter1988}) and mathematics (\cite{francis2007}), where precise communication of the specificities of structure is paramount. Styles can also be tailored to suit less obvious needs - for example, compared to photorealism, bolder styles can have benefits in terms of reduced degradation of image detail when subject to multiple stages of reproduction. Subtler styles can be applied to achieve effective results with very limited use of colour and ink, leading to improved economy for high-volume printing.
 
 \begin{figure}[h]
 	\centering
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm, draft]{images/placeholder}
-		\caption{Hand-drawn.}\label{ex_hand_drawn1}
+		\includegraphics[height=3.5cm]{images/ex_hand_drawn1}
+		\caption{}\label{ex_hand_drawn1}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm, draft]{images/placeholder}
-		\caption{Hand-drawn.}\label{ex_hand_drawn2}
+		\includegraphics[width=4.5cm]{images/ex_hand_drawn2}
+		\caption{}\label{ex_hand_drawn2}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm, draft]{images/placeholder}
-		\caption{Hand-drawn.}\label{ex_hand_drawn3}
+		\includegraphics[height=3.5cm]{images/ex_hand_drawn3}
+		\caption{}\label{ex_hand_drawn3}
 	\end{subfigure}
-	\caption{Traditional technical renderings.}
+	\caption{Traditional hand-drawn technical renderings.}
 \end{figure}
 
 The aim of the field of Non-Photorealistic Rendering (NPR) is to produce computer-generated images based upon such principles of traditional or digital art.
-Styles theorteically attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; pen-and-ink techniques such as stippling and cross-hatching; and 3D shading techniques such as cel-shading.
+Styles theoretically attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; pen-and-ink techniques such as stippling and cross-hatching; and 3D shading techniques such as cel-shading.
 Styles themselves may be manipulated by the artist to add expression - focusing the viewer's attention to areas of particular importance, whilst abstracting away unnecessary detail.
 As such, compared to photorealism, traditional techniques realised through NPR allow certain classes of visual information to be effectively conveyed in-line with the communicational goals of the artist.
 
@@ -102,7 +88,7 @@ A limited range of NPR styles are feasible with Cycles, however these are mostly
 	\caption{Cycles renderings.}
 \end{figure}
 
-The Freestyle\footnote{\url{http://freestyle.sourceforge.net}} edge-and-line-based NPR engine has shipped with Blender as of version 2.67. This engine allows for a wider range of technical and sketchy styles. However, a limitation of Freestyle is the inability to place strokes on faces, which leaves many NPR shading styles such as stippling out of reach. This greatly limits the ability of Freestyle to effectively communicate surface details through traditional techniques.
+The Freestyle\footnote{\url{http://freestyle.sourceforge.net}} edge-and-line-based NPR engine has shipped with Blender as of version 2.67. This engine allows for a wider range of sketchy (Figures \ref{ex_sketchy1}, \ref{ex_sketchy2}) and technical (Figure \ref{ex_line}) styles. However, a limitation of Freestyle is the inability to place strokes on faces, which leaves many NPR shading styles out of reach. This greatly limits the ability of Freestyle to effectively communicate surface details through traditional techniques.
 
 \begin{figure}[h]
 	\centering
@@ -121,18 +107,74 @@ The Freestyle\footnote{\url{http://freestyle.sourceforge.net}} edge-and-line-bas
 	\caption{Freestyle renderings.}
 \end{figure}
 
-The NPR subfield of Stroke Based Rendering (SBR) presents some interesting techniques to address such shortcommings.
+The NPR sub-field of Stroke Based Rendering (SBR) presents some interesting techniques to address such shortcomings.
 An excellent paper by Aaron Hertzmann (\cite{hertzmann2002}) summarises a selection of SBR approaches to automatically (or semi-automatically) create images by placing discrete strokes, based on some direction from the user.
 
-Hertzmann reports that some techniques - such as Haeberli's painterly algorithm (\cite{haeberli1990}) - have been adpoted into commercial drawing applications, however even today (2018) implementation of technical pen-and-ink styles do not appear to be as accessible.
-As such, an opportunity is identified to close this gap.
+Hertzmann reports that some techniques - such as Haeberli's painterly algorithm (\cite{haeberli1990}) - have been adopted into commercial drawing applications, however even as of today (2018) implementation of technical pen-and-ink styles do not appear to be as accessible.
+As such, an opportunity was identified to close this gap.
 
 \section{Problem Definition}
 
-A project is undertaken to extend Blender, by means of developing an add-on, to allow the user to easily produce high-quality renders of traditional, hand-drawn appearance, through application of traditional monochrome drawing techniques.
-A user-defined specification will influence the output, allowing the user to choose subtle or bold styles, as suitable for the application.
+A project is undertaken to extend Blender by developing an add-on (plug-in) written in Python (hereinafter the ``System''). The aim of the System is to allow the user to easily produce high-quality renders of traditional, hand-drawn appearance, through application of traditional monochrome drawing techniques.
 
-Scope of the project is limited to communication of mathematical surfaces. The primary use-case is creation of images for publication in technical papers or lecture notes.
+A user-defined specification shall influence the output, allowing the user to choose subtle or bold styles, tailored for expressing structure, as suitable for the application.
+
+System scope is limited to communication of mathematical surfaces. The primary use-case is creation of images for publication in technical papers or lecture slides/notes.
+
+The Customer and primary user is identified as John H Williamson, Lecturer, School of Computing Science, University of Glasgow.
+
+\section{Planning}
+
+Effective planning of activities was essential, given the short 12-week time-span over which the project was to be conducted, and the relative lack of the author's experience with Python development and image processing (high skills risk).
+
+Based upon the initial project brief\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Project-Brief}}, the approach taken was to stake-out all required high-level tasks and assign sensible durations to outline a feasible path. 
+In order to have meaningful discussions regarding detailed requirements (and reasonable gut-feel for levels of feature feasibility), initial ``ramp-up'' activities focussed on self-education by performing a literature review\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Research#literature-review}} of SBR techniques, familiarisation with Python, and familiarisation with potentially useful libraries.
+At this stage, time was also allocated for performing requirements analysis, development and testing, and final reporting.
+
+The initial plan (as it existed at the start of the project) is presented in Appendix \ref{appendix_planning}.
 
 \section{Requirements}
 
+Upon completion of ramp-up activities, a highly structured approach was taken to establish and agree System requirements.
+Initial requirements were gathered through a series of Customer meetings\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/meeting-notes}} and later summarised\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Requirements#initial-requirements}}.
+Detailed requirements were then clarified and formalised via a Customer questionnaire\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Requirements#questionnaire-responses}}. Each requirement was allocated a unique requirement ID to allow cross-referencing with user stories (see Section \ref{execution} for details).
+
+The outcome of this process is provided in detail in Appendix \ref{appendix_requirements}, however some foundational aspects are worth further discussion here.
+
+Firstly, an assumption was made that a purely image-space approach would be taken, I.e. no input is taken from Blender's object space.
+From research performed during ramp-up, it was clear that many generalised NPR approaches are possible when considering only 2D images as input.
+This yields many practical advantages such as: enabling use of powerful pre-existing image processing libraries e.g. \texttt{skimage}; flexibility to implement a variety of styles, giving leeway to experiment during development; and de-coupling of application code from Blender itself.
+These factors were all deemed valuable to reducing overall project risk.
+
+Secondly, requirements for user-control had to be understood.
+This was important, as the premise of the project relies on the artist (in this case the user), being able to influence the output in a way that meets their specific communicational needs.
+A key outcome of the questionnaire was identification of a requirement to control the manner in which line/stroke thickness can vary along its length.
+This technique can be used to great effect to communicate depth for example, where lines taper off as they move further away from the camera.
+Implementation of such perspective foreshortening techniques in existing software is lacking, so this was seen as good opportunity for the System to add genuine value.
+Ultimately, requirements were captured for line thickness to be scaled according to various surface characteristics including depth, intensity of light and curvature.
+
+Thirdly, a key requirement was for render output to be in vector graphics (SVG) format.
+This is beneficial from the user's point of view, as vector images can be scaled whilst maintaining quality, an important characteristic when the same source image may be presented across different media (e.g. lecture slides, technical papers).
+
+Finally, there was a desire for the chosen styles to adhere to principles of economy of ink.
+Traditional styles when applied with liberal quantities of ink can approach photorealism in the hands of a capable artist, and this is not the goal of this project.
+As such, the focus was on minimal or abstract styles, which maximise communicational value whilst minimising ink usage.
+Figures \ref{ex_hand_drawn1}, \ref{ex_hand_drawn2}, \ref{ex_hand_drawn3} make for excellent prototypes for the targeted styles.
+
+\section{Execution}\label{execution}
+
+Detailed requirements were composed into a series of user stories, and allocated one of three levels of risk - Low, Medium and High, with consideration given primarily to skills risk and technical risk of each.
+Story points were then allocated based on risk and complexity.
+
+At this stage, consideration was given to schedule constraints, and decisions made with the Customer to identify which stories would be tackled within the single 4-week sprint planned for this project.
+It was decided that all Must Haves, Should Haves and Could Haves would be targeted, with all Would Like to Haves placed in product backlog (I.e. these items are dropped from project scope).
+
+All targeted stories are presented in Appendix \ref{appendix_sprint_backlog}. Dropped stories are presented in Appendix \ref{appendix_product_backlog}.
+
+Each story was then granted a unique story ID. To ensure no requirements were orphaned, requirement IDs were cross-referenced with each story ID. 
+A matrix was defined to track this coverage, and is presented in Appendix \ref{appendix_coverage_matrix}.
+
+Stories within sprint backlog were added to the project plan, with foundational stories (S10, S20) taking initial priority, with high-risk stories which made up the bulk of complex development (S30, S40) following at the earliest opportunity on the time-line. 
+Lower-risk and lower value stories (S50, S60, S70, S80) were placed towards the end of development, with the understanding that these can be dropped if delays are encountered elsewhere.
+
+According to this rationale, the project execution plan was revised accordingly and is made available in Appendix \ref{appendix_execution_plan}.

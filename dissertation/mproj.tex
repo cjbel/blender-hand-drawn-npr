@@ -13,10 +13,33 @@
 %\uspackage{amssymb,amsmath}
 %\usepackage{url}
 %\usepackage{fancyvrb}
-%\usepackage[final]{pdfpages}
+\usepackage[final]{pdfpages}
 
 % Added to support Harvard-style APA
 \usepackage{natbib}
+
+% Added for compact lists (appendix_requirements)
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% Educational consent moved from .cls to allow insertion of signature image.
+\newcommand{\educationalconsent}{
+\newpage
+\section*{Education Use Consent}
+
+I hereby give my permission for this project to be shown to other
+University of Glasgow students and to be distributed in an electronic
+format.  \textbf{Please note that you are under no obligation to sign 
+this declaration, but doing so would help future students.}
+
+\begin{tabular}{@{}llll}
+      &                     &            &                     \\
+      &                     &            &                     \\
+Name: & Christopher James Bellingham & Signature: & \includegraphics[scale=0.05]{images/sig} \\
+      &                     &            &                     \\
+      &                     &            &                     \\
+\end{tabular}
+}
 
 \begin{document}
 
@@ -54,13 +77,16 @@
 
 \appendix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{appendix_planning}
+\include{appendix_requirements}
+\include{appendix_execution}
 \include{appendix_design}
+\include{appendix_renders}
 \include{appendix_credits}
-\chapter{Second appendix}
+\include{appendix_ethics}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% it is fine to change the bibliography style if you want
 \bibliographystyle{apa}
 \bibliography{mproj}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
