@@ -50,6 +50,23 @@ A more abstract representation of the same parts may better convey the details r
 
 Indeed, such non-photorealistic techniques have historically been used to great effect in technical disicplines such as engineering (\cite{porter1988}) and mathematics (\cite{francis2007}), where precise communication of the specitivies of structure is paramount. Styles can also be tailored to suit less obvious needs - for example, compared to photorealism, bolder styles can have benefits in terms of reduced degradation of image detail when subject to multiple stages of reproduction. Subtler styles can be applied to achieve effective results with very limited use of colour and ink, leading to improved economy for high-volume printing.
 
+\begin{figure}[h]
+	\centering
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=4cm, draft]{images/placeholder}
+		\caption{Hand-drawn.}\label{ex_hand_drawn1}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=4cm, draft]{images/placeholder}
+		\caption{Hand-drawn.}\label{ex_hand_drawn2}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=4cm, draft]{images/placeholder}
+		\caption{Hand-drawn.}\label{ex_hand_drawn3}
+	\end{subfigure}
+	\caption{Traditional technical renderings.}
+\end{figure}
+
 The aim of the field of Non-Photorealistic Rendering (NPR) is to produce computer-generated images based upon such principles of traditional or digital art.
 Styles theorteically attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; pen-and-ink techniques such as stippling and cross-hatching; and 3D shading techniques such as cel-shading.
 Styles themselves may be manipulated by the artist to add expression - focusing the viewer's attention to areas of particular importance, whilst abstracting away unnecessary detail.
@@ -57,15 +74,16 @@ As such, compared to photorealism, traditional techniques realised through NPR a
 
 \section{State of the Art}
 
-The previous section speaks to the benefit of traditional drawing styles, as realised through NPR. Unfortunately, actual implementation of NPR techniques in today's popular, widely available and easy to use rendering engines is limited, and often tailored to cartoon/anime styles (cel, Gooch shading).
-There is generally poor support for technical monochrome styles such as stippling and hatching, which is surprising given the strong tradition of such styles in technical disciplines.
+The previous section speaks to the benefit traditional drawing styles can bring to precisely communicate visual information. Unfortunately, actual implementation of NPR techniques in today's popular, widely available and easy to use rendering engines is limited, and often tailored to cartoon/anime styles (cel, Gooch shading).
+There is generally poor support for technical monochrome styles such as hatching, which is surprising given the strong tradition of such styles in technical disciplines.
 
 Blender\footnote{\url{https://www.blender.org}} is a software package with capability for 2D sketching, 3D modelling, animation, physics simulation and rendering.
 Licensed under the GNU General Public License, Blender is free to use and as such enjoys widespread adoption across multiple fields.
-The software ships with a powerful rendering engine named Cycles, which can be used to produce high-quality renders.
-As a physically-based, path-tracing rendering engine, Cycles aim is to accurately simulate the interaction of light with various kinds of materials.
+The software ships with a selection of rendering engines which can be used to produce high-quality output.
+
+The most prominent example, Cycles\footnote{\url{https://www.cycles-renderer.org}}, is a physically-based, path-tracing rendering engine which aims to accurately simulate the interaction of light with various kinds of materials.
 This makes Cycles well-suited for producing photorealistic renderings (Figure \ref{ex_photoreal}).
-A limited range of NPR styles are feasible with Cycles, however these are mostly suited to non-technical styles (Figure \ref{ex_stylised}).
+A limited range of NPR styles are feasible with Cycles, however these are mostly suited to non-technical styles (Figures \ref{ex_toon1}, \ref{ex_toon2}).
 
 \begin{figure}[h]
 	\centering
@@ -74,22 +92,47 @@ A limited range of NPR styles are feasible with Cycles, however these are mostly
 		\caption{Photorealistic.}\label{ex_photoreal}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm]{images/ex_stylised}
-		\caption{Stylised.}\label{ex_stylised}
+		\includegraphics[height=4cm]{images/ex_toon1}
+		\caption{Stylised.}\label{ex_toon1}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm]{images/ex_hand_drawn}
-		\caption{Hand-drawn.}\label{ex_hand_drawn}
+		\includegraphics[height=4cm]{images/ex_toon2}
+		\caption{Cel.}\label{ex_toon2}
 	\end{subfigure}
-	\caption{Assorted rendering styles.\protect\footnotemark}
+	\caption{Cycles renderings.}
 \end{figure}
+
+The Freestyle\footnote{\url{http://freestyle.sourceforge.net}} edge-and-line-based NPR engine has shipped with Blender as of version 2.67. This engine allows for a wider range of technical and sketchy styles. However, a limitation of Freestyle is the inability to place strokes on faces, which leaves many NPR shading styles such as stippling out of reach. This greatly limits the ability of Freestyle to effectively communicate surface details through traditional techniques.
+
+\begin{figure}[h]
+	\centering
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=3.25cm]{images/ex_sketchy1}
+		\caption{Sketchy.}\label{ex_sketchy1}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=3.25cm]{images/ex_sketchy2}
+		\caption{Sketchy.}\label{ex_sketchy2}
+	\end{subfigure}
+	\begin{subfigure}[b]{0.3\textwidth}
+		\includegraphics[height=3.25cm]{images/ex_line}
+		\caption{Line.}\label{ex_line}
+	\end{subfigure}
+	\caption{Freestyle renderings.}
+\end{figure}
+
+The NPR subfield of Stroke Based Rendering (SBR) presents some interesting techniques to address such shortcommings.
+An excellent paper by Aaron Hertzmann (\cite{hertzmann2002}) summarises a selection of SBR approaches to automatically (or semi-automatically) create images by placing discrete strokes, based on some direction from the user.
+
+Hertzmann reports that some techniques - such as Haeberli's painterly algorithm (\cite{haeberli1990}) - have been adpoted into commercial drawing applications, however even today (2018) implementation of technical pen-and-ink styles do not appear to be as accessible.
+As such, an opportunity is identified to close this gap.
 
 \section{Problem Definition}
 
-As such, a project is undertaken to extend Blender, by means of developing an add-on, which allows the user to easily produce high-quality renders of traditional, hand-drawn appearance (Figure \ref{ex_hand_drawn}), through application of traditional monochrome drawing techniques according to a simple user-defined specification.
+A project is undertaken to extend Blender, by means of developing an add-on, to allow the user to easily produce high-quality renders of traditional, hand-drawn appearance, through application of traditional monochrome drawing techniques.
+A user-defined specification will influence the output, allowing the user to choose subtle or bold styles, as suitable for the application.
 
-\section{Aim \& Objectives}
-% 
+Scope of the project is limited to communication of mathematical surfaces. The primary use-case is creation of images for publication in technical papers or lecture notes.
 
+\section{Requirements}
 
-\footnotetext{Credits: Figure \ref{ex_photoreal}: Aorta (BlenderArtists.org), Figure \ref{ex_stylised}: Davide\_Pellino (BlenderArtists.org), Figure \ref{ex_hand_drawn}: \cite{francis2007}}

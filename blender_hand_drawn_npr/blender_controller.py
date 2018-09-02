@@ -4,8 +4,7 @@ else:
     try:
         from .core.illustrate import Illustrator
         from .core.models import Settings, ThicknessParameters, LightingParameters, StippleParameters
-    except (ValueError):
-    # except (AttributeError, ImportError):
+    except (AttributeError, ImportError):
         print("Core imports failed!")
         # This will fail when being called from vanilla Blender during tests due to lack of needed dependencies.
         # This is fine, since only the internal Blender functionality is tested.
