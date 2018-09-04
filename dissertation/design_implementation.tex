@@ -12,16 +12,57 @@
 
 \chapter{Design \& Implementation}\label{design_implementation}
 
-\section{Architecture \& Design Considerations}
+The system architecture diagram is presented in Appendix \ref{appendix_design}.
+
+\section{Platform Considerations \& High-Level Design}
 % - Design for blender plugin (multifile).
 % - Separation of blender-specific from backend.
 % - Design considerations for testing (brief, cover testing in next section).
 % - Levels of abstraction between modules.
 
-\footnote{\url{https://wiki.blender.org/wiki/Process/Addons/Guidelines}}
-\footnote{\url{https://docs.blender.org/manual/en/dev/advanced/scripting/addon_tutorial.html}}
+Blender ships with an embedded Python interpreter\footnote{\url{https://docs.blender.org/api/2.79/info_overview.html}}, allowing arbitrary scripts to be executed within the Blender environment.
+Blender's powerful Python API\footnote{\url{https://docs.blender.org/api/2.79/}} (specifically the \texttt{bpy} module), exposes access to session/scene data, allows automation of built-in functionality, and enables creation of UI elements.
 
-The system architecture diagram is presented in Appendix \ref{appendix_design}.
+Trivial scripts can be pasted into and executed from the built-in Python shell or editor, however good practice\footnote{\url{https://docs.blender.org/api/2.79/info_overview.html#script-loading}} dictates that more complex systems be encapsulated as a multi-file package{\footnote{\url{https://blender.stackexchange.com/questions/44532/best-practice-for-add-on-generation-with-many-functions-single-file-or-split-it}}.
+To encourage distribution of useful modules, Blender provides a convenient ``add-on'' subsystem, which allows packages to be easily installed and toggled via the GUI.
+
+An add-on is essentially a regular Python package, with two key additional requirements. The top-level package \texttt{\_\_init\_\_.py} must contain package metadata\footnote{\url{https://wiki.blender.org/wiki/Process/Addons/Guidelines/metainfo}}, and must implement \texttt{register()} and \texttt{unregister()} methods. 
+These methods allow the add-on subsystem to toggle visibility of contained classes within the Blender environment, essentially positioning \texttt{\_\_init\_\_.py} as the entry-point to the application.
+
+Such requirements are straightforward, however dependence on the \texttt{bpy} module has practical implications for design and development.
+\texttt{bpy} is shipped built-in to the embedded environment, and is not accessible outside of a running Blender session\footnote{At least not without complex and poorly documented workarounds: \url{https://blender.stackexchange.com/questions/102933/a-working-guidance-for-building-blender-as-bpy-python-module}}.
+Indeed, the role of \texttt{bpy} is to query and alter the internal state of a Blender session, and has no functional use outside of this session (as would be the case when developing code in an IDE operating in a virtual environment).
+
+This is generally not a concern for trivial systems where development and testing can be performed within Blender's simple script editor.
+Due to the anticipated complexity of this System however, the power of an IDE was preferred (specifically debugging and re-factoring capabilities).
+
+As such, a design decision was taken to de-couple \texttt{bpy} from as much of the application code as possible.
+High level design consists of two main tiers in an adapted Model-View-Controller arrangement. Tier 1 (view/controller) contains code with dependencies on \texttt{bpy}, which must run/tested within the clunky Blender environment. This is limited to essential add-on plumbing, GUI creation, manipulation of user-space settings within Blender, and triggering of Tier 2 code. Tier 2 (model) is free of \texttt{bpy} dependencies, and is run/tested in an IDE and virtual environment. The majority of application code is contained in Tier 2 which has no knowledge of Blender (or the Tier 1 view/controller), and houses all image processing logic and SVG rendering.
+
+Some practical testing implications of this approach are discussed further in Section \ref{}.
+
+% Such requirements are straightforward, however there are practical implications to Blender's use of an embedded Python environment.
+% The critical \texttt{bpy} module is shipped built-in to the embedded environment, and is not accessible (or functional) outside of a running Blender session.
+
+
+
+% , however development of more complex systems benefit greatly from tools such as external IDEs and virtual environments.
+
+% The consequence is that \texttt{bpy} is not available in the virtual environment used for development\footnote{At least not without complex and poorly documented workarounds: \url{https://blender.stackexchange.com/questions/102933/a-working-guidance-for-building-blender-as-bpy-python-module}}.
+
+% This presents a challenge when developing and testing code with \texttt{bpy} dependencies, since preference is to develop all code within an external IDE and virtual environment.
+
+% Trivial development can be completed using Blender's provided Python shell and basic script editor.
+
+% This presents challenges when developing and testing code with \texttt{bpy} dependancies.
+
+% \footnote{\url{https://docs.blender.org/manual/en/dev/advanced/scripting/addon_tutorial.html}}
+
+\section{Lower-Level Design}
+
+\subsection{View/Controller}
+
+\subsection{Model}
 
 \section{Implementation Details \& Challenges}
 % - Logging.
