@@ -89,8 +89,8 @@ if __name__ == "__main__":
                                                              density_fn_exponent=2),
                         optimise_clip_paths=True,
                         enable_internal_edges=True,
-                        enable_streamlines=False,
-                        enable_stipples=False,
+                        enable_streamlines=True,
+                        enable_stipples=True,
                         in_path="/tmp/")
 
     illustrator = Illustrator(settings)
