@@ -4,7 +4,7 @@ import logging
 import numpy as np
 from skimage import draw, measure
 
-from blender_hand_drawn_npr.model.models import Surface, ThicknessParameters
+from blender_hand_drawn_npr.model.data import Surface, ThicknessParameters
 from blender_hand_drawn_npr.model.primitives import Path
 
 logger = logging.getLogger(__name__)

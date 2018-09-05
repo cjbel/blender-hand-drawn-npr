@@ -4,7 +4,7 @@ import tempfile
 import bpy
 
 from ..model.illustrate import Illustrator
-from ..model.models import ThicknessParameters, LightingParameters, StippleParameters, Settings
+from ..model.data import ThicknessParameters, LightingParameters, StippleParameters, Settings
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import os
 import svgwrite
 
 from blender_hand_drawn_npr.model.elements import Silhouette, InternalEdges, Streamlines, Stipples
-from blender_hand_drawn_npr.model.models import Surface
+from blender_hand_drawn_npr.model.data import Surface
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class Illustrator:
 
 
 if __name__ == "__main__":
-    from blender_hand_drawn_npr.model.models import Settings, LightingParameters, StippleParameters, ThicknessParameters
+    from blender_hand_drawn_npr.model.data import Settings, LightingParameters, StippleParameters, ThicknessParameters
 
     settings = Settings(out_filepath="/tmp/out.svg",
                         cull_factor=50,
