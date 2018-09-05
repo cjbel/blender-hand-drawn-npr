@@ -1,4 +1,5 @@
 import logging
+
 import bpy
 
 logger = logging.getLogger(__name__)
@@ -15,21 +16,21 @@ class MainPanel(bpy.types.Panel):
     bl_region_type = "WINDOW"
     bl_context = "render"
 
-    def draw_header(self, context):
-        self.layout.prop(data=context.scene.system_settings,
-                         property="is_hook_enabled",
-                         text="")
-
     def draw(self, context):
         system_settings = context.scene.system_settings
 
         self.layout.label("General:")
         self.layout.prop(data=system_settings,
-                         property="out_filename")
+                         property="out_filepath")
         self.layout.prop(data=system_settings,
                          property="corner_factor",
                          text="Corner Factor")
-
+        self.layout.prop(data=context.scene.system_settings,
+                         property="is_hook_enabled",
+                         text="Enable render post")
+        row = self.layout.row()
+        row.scale_y = 2.0
+        row.operator("wm.render_npr", icon='RENDER_STILL')
         self.layout.separator()
 
         box = self.layout.box()

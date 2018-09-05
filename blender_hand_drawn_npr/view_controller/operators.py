@@ -1,23 +1,12 @@
 import logging
-import os
 import tempfile
 
 import bpy
 
+from ..model.illustrate import Illustrator
+from ..model.models import ThicknessParameters, LightingParameters, StippleParameters, Settings
+
 logger = logging.getLogger(__name__)
-
-
-# class ToggleNPRPostRenderHook(bpy.types.Operator):
-#     bl_idname = "wm.toggle_npr_post_render_hook"
-#     bl_label = "Enable triggering of hand-drawn NPR render on completion of Cycles rendering."
-#
-#     def execute(self, context):
-#         if context.scene.system_settings.is_hook_enabled:
-#             logger.debug("Enabling hook...")
-#             bpy.app.handlers.render_post.append(bpy.ops.wm.render_npr)
-#         else:
-#             logger.debug("Disabling hook...")
-#             bpy.app.handlers.render_post.remove(bpy.ops.wm.render_npr)
 
 
 class PrepareNPRSettings(bpy.types.Operator):
@@ -132,19 +121,9 @@ class CreateNPRCompositorNodes(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class DestroyCompositorNodeOperator(bpy.types.Operator):
-    bl_idname = "wm.destroy_npr_compositor_nodes"
-    bl_label = "Destroy compositor nodes to write render passes to disk."
-
-    def execute(self, context):
-        logger.debug("Executing DestroyCompositorNodeOperator...")
-
-        return {'FINISHED'}
-
-
 class RenderNPR(bpy.types.Operator):
     bl_idname = "wm.render_npr"
-    bl_label = "Render the scene with the hand-drawn NPR engine."
+    bl_label = "Render NPR"
 
     def execute(self, context):
 
@@ -182,7 +161,7 @@ class RenderNPR(bpy.types.Operator):
                                                density_fn_exponent=system_settings.stipple_density_exponent)
 
         settings = Settings(in_path=tempfile.gettempdir(),
-                            out_filename=system_settings.out_filename,
+                            out_filepath=system_settings.out_filepath,
                             harris_min_distance=system_settings.corner_factor,
                             silhouette_thickness_parameters=silhouette_thickness_parameters,
                             enable_internal_edges=system_settings.is_internal_enabled,
@@ -206,17 +185,22 @@ class RenderNPR(bpy.types.Operator):
                             uv_secondary_trim_size=20)
 
         logger.debug("Starting illustrator...")
-        illustrator = Illustrator(settings)
-        illustrator.illustrate()
-        illustrator.save()
+        try:
+            illustrator = Illustrator(settings)
+            illustrator.illustrate()
+            illustrator.save()
+        except FileNotFoundError:
+            self.report({"ERROR"}, "First render the scene with Cycles and try again.")
+            logger.info("Source image(s) not found.")
+            return {'FINISHED'}
 
+        self.report({"INFO"}, "Render NPR complete!")
         return {'FINISHED'}
 
 
 classes = (
     PrepareNPRSettings,
     CreateNPRCompositorNodes,
-    DestroyCompositorNodeOperator,
     RenderNPR
 )
 

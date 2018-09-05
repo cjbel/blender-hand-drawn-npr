@@ -3,8 +3,8 @@ import os
 
 import svgwrite
 
-from blender_hand_drawn_npr.core.elements import Silhouette, InternalEdges, Streamlines, Stipples
-from blender_hand_drawn_npr.core.models import Surface
+from blender_hand_drawn_npr.model.elements import Silhouette, InternalEdges, Streamlines, Stipples
+from blender_hand_drawn_npr.model.models import Surface
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,7 @@ class Illustrator:
 
         illustration_dimensions = (self.surface.obj_image.shape[1],
                                    self.surface.obj_image.shape[0])
-        self.illustration = svgwrite.Drawing(os.path.join(self.settings.in_path, self.settings.out_filename),
-                                             illustration_dimensions)
+        self.illustration = svgwrite.Drawing(self.settings.out_filepath, illustration_dimensions)
 
         self.intersect_boundaries = []
 
@@ -57,14 +56,13 @@ class Illustrator:
     def save(self):
         self.illustration.save()
 
-        logger.info("Illustration saved to: %s", os.path.join(self.settings.in_path, self.settings.out_filename))
+        logger.info("Illustration saved to: %s", self.settings.out_filepath)
 
 
 if __name__ == "__main__":
+    from blender_hand_drawn_npr.model.models import Settings, LightingParameters, StippleParameters, ThicknessParameters
 
-    from blender_hand_drawn_npr.core.models import Settings, LightingParameters, StippleParameters, ThicknessParameters
-
-    settings = Settings(out_filename="out.svg",
+    settings = Settings(out_filepath="/tmp/out.svg",
                         cull_factor=50,
                         optimise_factor=5,
                         curve_fit_error=0.01,
@@ -96,4 +94,3 @@ if __name__ == "__main__":
     illustrator = Illustrator(settings)
     illustrator.illustrate()
     illustrator.save()
-

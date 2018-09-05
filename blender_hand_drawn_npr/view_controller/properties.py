@@ -15,12 +15,11 @@ class NPRSystemSettings(bpy.types.PropertyGroup):
     logger.debug("Instantiating SystemSettings...")
 
     is_hook_enabled = bpy.props.BoolProperty(name="Enable",
-                                             description="Automatically render hand-drawn NPR after Cycles rendering "
-                                                         "is complete",
+                                             description="Automatically perform Render NPR post-Cycles",
                                              default=False,
                                              update=toggle_hook)
 
-    out_filename = bpy.props.StringProperty(name="",
+    out_filepath = bpy.props.StringProperty(name="",
                                             description="File path for the produced SVG",
                                             default=os.path.join(tempfile.gettempdir(), "out.svg"),
                                             subtype="FILE_PATH")

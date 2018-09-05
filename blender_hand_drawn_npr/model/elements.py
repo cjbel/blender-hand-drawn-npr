@@ -7,8 +7,8 @@ import svgwrite
 from scipy import stats, ndimage
 from skimage import measure, util, feature, morphology, graph
 
-from blender_hand_drawn_npr.core.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
-from blender_hand_drawn_npr.core.third_party.variable_density import moving_front_nodes
+from blender_hand_drawn_npr.model.primitives import Path, Curve1D, CurvedStroke, DirectionalStippleStroke
+from blender_hand_drawn_npr.model.third_party.variable_density import moving_front_nodes
 
 logger = logging.getLogger(__name__)
 
@@ -328,7 +328,6 @@ class Stipples:
         return density
 
     def __prepare_reference(self):
-        from skimage import io
         # Prepare component images, where areas of high intensity will correspond to areas of dense stroke placement.
         shadow = util.invert(self.surface.shadow_image)
         ao = util.invert(self.surface.ao_image)
@@ -343,8 +342,6 @@ class Stipples:
         # strokes will later be discarded, but generating them in the first place leads to reduced performance.
         mask = self.surface.obj_image == 0
         combined[mask] = 0
-        io.imshow(combined)
-        io.show()
 
         self.reference_image = combined
         # Compute the mean of intensities which lie within the object boundary.

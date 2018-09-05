@@ -26,7 +26,7 @@ Settings = namedtuple("Settings", ["cull_factor",
                                    "enable_streamlines",
                                    "enable_stipples",
                                    "in_path",
-                                   "out_filename"])
+                                   "out_filepath"])
 
 ThicknessParameters = namedtuple("ThicknessParameters", ["const",
                                                          "z",
@@ -149,7 +149,3 @@ class Surface:
                 self.v_curvature_image[path.points[i][1], path.points[i][0]] = delta
             else:
                 logger.warning("UV image mismatch!")
-
-
-if __name__ == "__main__":
-    pass
