@@ -6,7 +6,7 @@
 \end{figure}
 
 \FloatBarrier
-\section{Silhouette}
+\section{Silhouette}\label{impl_silhouette}
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/sil_obj.png}
@@ -32,7 +32,7 @@
 \end{figure}
 
 \FloatBarrier
-\section{Internal Edges}
+\section{Internal Edges}\label{impl_internal}
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/int_depth.png}
@@ -58,11 +58,11 @@
 \end{figure}
 
 \FloatBarrier
-\section{Streamlines}
+\section{Streamlines}\label{impl_stream}
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/stream_cont1.png}
-	\caption{The surface displayed is an intensity map extracted from Blender's UV pass. This particular image represents the U-coordinate intensities. Streamlines are displayed in colour - these are isolines which follow a given intensity of the underlying surface, creating an effective way to show surface structure. Each isoline is an indivual \texttt{Path}. This process is repeated with a range of different intensities in U and V coordinate space, to produce \texttt{Path}s which criss-cross the surface.}\label{stream_cont1}
+	\caption{The surface displayed is an intensity map extracted from Blender's UV pass. This particular image represents the U-coordinate intensities. Streamlines are displayed in colour - these are isolines which follow a given intensity of the underlying surface, creating an effective way to show surface structure. Each isoline is an individual \texttt{Path}. This process is repeated with a range of different intensities in U and V coordinate space, to produce \texttt{Path}s which criss-cross the surface.}\label{stream_cont1}
 \end{figure}
 
 \begin{figure}[h!]
@@ -78,21 +78,36 @@
 \end{figure}
 
 \FloatBarrier
-\section{Stipples}
+\section{Stipples}\label{impl_stipples}
 \begin{figure}[h!]
 	\centering
-	\includegraphics[height=5cm]{images/stipple_intensity.png}
+	\includegraphics[height=4.5cm]{images/stipple_intensity.png}
 	\caption{An intensity map is created, based on a weighted combination of Blender's Direct Diffuse, Ambient Occlusion and Shadow passes. The User is able to control the weight of each, based on which of these components they wish to emphasise in the final render.}\label{stipple_intensity}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/stipple_placement.png}
-	\caption{Stipple placement locations computed by a third party library based on varibale density Voroni cells, using the image intensity map (and some further User-provided factors) as the density function. Stipple locations here are plotted, each dot represents the ``head'' location for each stipple.}\label{stipple_placement}
+	\caption{Stipple placement locations (nodes) computed by a third party library based on variable density Voroni cells, using the image intensity map (and some further User-provided factors) as the density function. Nodes beyond a User-specified are rejected. Remaining nodes are plotted here for visualisation, each dot represents the ``head'' location for each stipple.}\label{stipple_placement}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includesvg[height=5cm]{images/stipple.svg}
-	\caption{Each stipple placement coordinate convered to a \texttt{DirectionalStippleStroke}, and rendered as a SVG. Stipples have a ``tail'' which provide insight to underlying structure - the tail is aligned according to the underlying U-coordinate direction of the surface. Image shows Stipples combined with Internal Edges and Silhouette.}\label{stipple}
+	\caption{Each stipple placement coordinate converted to a \texttt{DirectionalStippleStroke}, and rendered as a SVG. Stipples have a ``tail'' which provide insight to underlying structure - the tail is aligned according to the underlying U-coordinate direction of the surface. Image shows Stipples combined with Internal Edges and Silhouette.}\label{stipple}
+\end{figure}
+
+\FloatBarrier
+\section{Demonstration}\label{impl_demo}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\textwidth]{images/demo_blender.png}
+	\caption{Demo scene, showing a single mesh, light source and camera in Blender's viewport. The red bordered section depicts the UI created for this System, with all optional elements enabled - Internal Edges, Streamlines and Stipples.}\label{demo_blender}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includesvg[width=\textwidth]{images/demo_result.svg}
+	\caption{Final result of the render process - a visually appealing render, in SVG format, combining streamline and directional stipple styles.}\label{demo_result}
 \end{figure}
