@@ -133,7 +133,6 @@ The process is outlined in Appendix \ref{impl_stipples}.
 
 \subsection{Expressive SVG Rendering}
 
-\FloatBarrier
 \subsubsection{Continuous Strokes}
 
 In order to achieve creative techniques such as perspective foreshortening, a stroke’s thickness must be smoothly altered over its length, a feature not supported by SVG Bezier primitives. 
@@ -143,29 +142,35 @@ Next, new curves are created, offset from the construction curve by a distance a
 These curves are then used to form a SVG path, complete with rounded end-caps.
 To achieve a visually-appealing rendering, the produced strokes must merge together cleanly, and these rounded end-caps provide a convenient way to achieve this.
 
-\begin{figure}[h!]
-	\centering
-	\includegraphics[height=5cm]{images/stroke_construction.png}
-	\caption{Anatomy of continuous \texttt{CurvedStroke}s. Image shows clean combination of two strokes. Stroke outlines in black, with no fill applied to aid visualisation. Red dashed lines represent construction curves, from which the black outlines are derived through curve offsetting. Grey control points allow the length of each black outline path allow the stroke thickness to varied over its length (a slight taper is shown here on the leftmost stroke).}\label{stroke_construction}
-\end{figure}
-
-\FloatBarrier
 \subsubsection{Discrete Strokes}
 
 \texttt{Stipples} are much simpler to model, in that each stroke consists of two rounded end caps joined by straight lines.
 However, this simple design allows for flexibility of styles - both head and tail radius is User-configurable, along with stroke length.
 Currently, the System is implemented such that all stipples have the same shape/size, however the System is easy to extend to allow different variations of stipple strokes throughout the image.
 
-\begin{figure}[h!]
-	\centering
-	\includegraphics[height=5cm]{images/stipple_construction.png}
-	\caption{Anatomy of a discrete \texttt{DirectionalStippleStroke}. Stroke outline in black, with no fill applied to aid visualisation. The radius of the ``tail'' end is set much smaller than the ``head'', to give a severe tapering style.}\label{stroke_construction}
-\end{figure}
-
 Talk about clipping.
 
-\FloatBarrier
+\newpage
 \section{Demonstration}
 % - UI.
 % - Sample render.
 % - Performance.
+
+\subsection{Function}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[height=0.4\textheight]{images/demo_blender.png}
+	\caption{Demo scene, showing a single mesh, light source and camera in Blender's viewport. The red bordered section depicts the UI created for this System, with all optional elements enabled - Internal Edges, Streamlines and Stipples.}\label{demo_blender}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includesvg[height=0.4\textheight]{images/demo_result.svg}
+	\caption{Final result of the render process - a visually appealing render, in SVG format, combining streamline and directional stipple styles.}\label{demo_result}
+\end{figure}
+
+\subsection{Performance}
+
+There are no specific performance requirements, however some basic run-times figures are presented here.
+Run-time does not include time taken for Cycles to produce a render result, performance analysis is limited only to the developed System (i.e. processing of render passes to produce the final SVG).

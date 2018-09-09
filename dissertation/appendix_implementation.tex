@@ -98,16 +98,19 @@
 \end{figure}
 
 \FloatBarrier
-\section{Demonstration}\label{impl_demo}
+\section{Continuous Strokes}
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{images/demo_blender.png}
-	\caption{Demo scene, showing a single mesh, light source and camera in Blender's viewport. The red bordered section depicts the UI created for this System, with all optional elements enabled - Internal Edges, Streamlines and Stipples.}\label{demo_blender}
+	\includegraphics[height=5cm]{images/stroke_construction.png}
+	\caption{Anatomy of continuous \texttt{CurvedStroke}s. Image shows clean combination of two strokes. Stroke outlines in black, with no fill applied to aid visualisation. Red dashed lines represent construction curves, from which the black outlines are derived through curve offsetting. Grey control points allow the length of each black outline path allow the stroke thickness to varied over its length (a slight taper is shown here on the leftmost stroke).}\label{stroke_construction}
 \end{figure}
 
+\FloatBarrier
+\section{Discrete Strokes}
+
 \begin{figure}[h!]
 	\centering
-	\includesvg[width=\textwidth]{images/demo_result.svg}
-	\caption{Final result of the render process - a visually appealing render, in SVG format, combining streamline and directional stipple styles.}\label{demo_result}
+	\includegraphics[height=5cm]{images/stipple_construction.png}
+	\caption{Anatomy of a discrete \texttt{DirectionalStippleStroke}. Stroke outline in black, with no fill applied to aid visualisation. The radius of the ``tail'' end is set much smaller than the ``head'', to give a severe tapering style.}\label{stroke_construction}
 \end{figure}

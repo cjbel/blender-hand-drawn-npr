@@ -7,7 +7,38 @@
 \usepackage[hyphens]{url}
 \usepackage{times}
 \usepackage{csquotes}
+\usepackage{courier}
+\usepackage{wrapfig}
 
+
+\usepackage{listings}
+\usepackage{color}
+ 
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize\ttfamily,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+ 
+\lstset{style=mystyle}
 
 % For alternative page numbering use the following package
 % and see documentation for commands
@@ -86,6 +117,7 @@ Name: & Christopher James Bellingham & Signature: & \includegraphics[scale=0.05]
 \include{appendix_execution}
 \include{appendix_design}
 \include{appendix_implementation}
+\include{appendix_evaluation}
 \include{appendix_renders}
 \include{appendix_credits}
 \include{appendix_ethics}
