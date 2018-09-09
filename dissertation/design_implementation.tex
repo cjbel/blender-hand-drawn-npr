@@ -57,8 +57,6 @@ The majority of application code - including all image processing logic and SVG 
 This design enabled the majority of development to take place outside of Blender.
 Core rendering functionality provided by the \texttt{model} can be run directly, and strong de-coupling enables the backend \texttt{model} to be used with 3D modelling packages other than Blender, provided the necessary input render pass data can be made available on disk.
 
-Some practical testing implications of this approach are discussed further in Section \ref{}.
-
 \section{Domain Design}
 
 The domain model is presented in Appendix \ref{appendix_design}, Figure \ref{domain}.
@@ -67,7 +65,8 @@ The domain model is presented in Appendix \ref{appendix_design}, Figure \ref{dom
 
 Code in this package is limited to essential add-on plumbing; GUI creation; manipulation of User-space settings within Blender; and triggering of \texttt{model} code.
 
-Package structure is based upon existing well-known examples of Blender add-ons\footnote{Cycles, Archimesh}.
+In lieu of availability of documented best-practice from Blender, package structure is based upon existing well-known examples of Blender add-ons\footnote{Cycles, Archimesh}, which separates \texttt{ui} creation from Blender \texttt{property} and \texttt{operator} definitions.
+Whilst this approach is not essential to design, it prepares the System for potential future adoption as an official add-on.
 
 \subsection{Model}
 
@@ -118,7 +117,7 @@ The process is then repeated for multiple intensity values, according to the num
 
 \subsection{Discrete Strokes}
 
-An optimisation-based Stroke Based Rendering approach is taken to placement of discrete strokes (\texttt{Stipples}), relying on an existing implementation\footnote{\url{https://github.com/johnhw/variable_density}} of Fornberg and Flyer's \citep{fornberg2015} 2D node-distribution algorithm.
+An optimisation-based SBR approach is taken to placement of discrete strokes (\texttt{Stipples}), relying on an existing implementation\footnote{\url{https://github.com/johnhw/variable_density}} of Fornberg and Flyer's \citep{fornberg2015} 2D node-distribution algorithm.
 
 First, diffuse direct, shadow and ambient occlusion render passes are combined into an intensity map, based on weightings defined by the User.
 A density function is defined, which allows intensity at a point to be queried.
@@ -131,6 +130,18 @@ Finally, a \texttt{DirectionalStippleStroke} is created for each remaining node 
 
 The process is outlined in Appendix \ref{impl_stipples}.
 
+A complication introduced by stipples is handling of clipping paths.
+When a stipple is placed, depending on it's dimensions and stroke direction it may bleed-over the edge of an internal edge or silhouette line.
+The former is not a huge problem aesthetically, however the latter tends to reduce the overall cleanness of the image outline, impacting quality.
+As such, all stipples are clipped at the point where they breach the silhouette.
+This is implemented in two different ways, depending on the desired speed of execution and required ease of editing in an external editor.
+In both cases the silhouette path is used to define the overall SVG clipping path for the scene.
+The first approach indiscriminately applies this clipping path to every stroke in the image, regardless of whether it breaches the silhouette.
+This is quick to render, however opening the image in an editor (tested with Inkscape) is extremely resource-intensive as the clipping paths must be recomputed for each stipple whenever a change is made.
+The second approach only applies the clipping path if the stroke breaches the silhouette, but run-time is doubled as additional checks must be made during placement.
+The benefit however is good performance in external editors.
+The approach used can be toggled in the UI using option ``Optimise Clip Path''.
+
 \subsection{Expressive SVG Rendering}
 
 \subsubsection{Continuous Strokes}
@@ -142,13 +153,15 @@ Next, new curves are created, offset from the construction curve by a distance a
 These curves are then used to form a SVG path, complete with rounded end-caps.
 To achieve a visually-appealing rendering, the produced strokes must merge together cleanly, and these rounded end-caps provide a convenient way to achieve this.
 
+The structure of such a stroke is shown in Appendix \ref{appendix_continous_strokes}.
+
 \subsubsection{Discrete Strokes}
 
 \texttt{Stipples} are much simpler to model, in that each stroke consists of two rounded end caps joined by straight lines.
-However, this simple design allows for flexibility of styles - both head and tail radius is User-configurable, along with stroke length.
-Currently, the System is implemented such that all stipples have the same shape/size, however the System is easy to extend to allow different variations of stipple strokes throughout the image.
+However, this simple design still allows for flexibility of styles - both head and tail radius is User-configurable, along with stroke length.
+Currently, the System is implemented such that all stipples have the same shape/size, however this is easy to change to allow different variations of stipple strokes throughout the image.
 
-Talk about clipping.
+The structure of such a stroke is shown in Appendix \ref{appendix_discrete_strokes}.
 
 \newpage
 \section{Demonstration}
@@ -160,17 +173,19 @@ Talk about clipping.
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[height=0.4\textheight]{images/demo_blender.png}
-	\caption{Demo scene, showing a single mesh, light source and camera in Blender's viewport. The red bordered section depicts the UI created for this System, with all optional elements enabled - Internal Edges, Streamlines and Stipples.}\label{demo_blender}
+	\includegraphics[width=\textwidth]{images/demo_blender.png}
+	\caption{Demo scene, showing a single mesh. Light source and camera are configured (not visible in view). The System UI is presented at the right of the window, showing available User parameters and all optional elements enabled - Internal Edges, Streamlines and Stipples.}\label{demo_blender}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
-	\includesvg[height=0.4\textheight]{images/demo_result.svg}
-	\caption{Final result of the render process - a visually appealing render, in SVG format, combining streamline and directional stipple styles.}\label{demo_result}
+	\includesvg[height=0.3\textheight]{images/demo_result.svg}
+	\caption{Final result of the render process - a visually appealing render, in SVG format, combining streamline and directional stipple styles. Additional examples of renders produced by the System are available in Appendix \ref{appendix_renders}.}\label{demo_result}
 \end{figure}
 
+\FloatBarrier
 \subsection{Performance}
 
-There are no specific performance requirements, however some basic run-times figures are presented here.
-Run-time does not include time taken for Cycles to produce a render result, performance analysis is limited only to the developed System (i.e. processing of render passes to produce the final SVG).
+There are no specific performance requirements, however a basic run-time benchmark is presented here.
+Run-time does not include time taken for Cycles to produce a render result. 
+Performance analysis is limited only to the developed System (i.e. processing of render passes to produce the SVG rendering shown in Figure \ref{demo_result}).

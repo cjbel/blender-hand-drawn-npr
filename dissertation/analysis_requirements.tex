@@ -34,27 +34,27 @@ Indeed, the medium upon which the image is to be delivered also plays an importa
 For example, a high-resolution, full-colour, photorealistic image may be appropriate for a magazine. 
 A more abstract representation of the same parts may better convey the details required of the monochrome technical manual, where knowledge of surface texture and glossiness at best fail to add value, at worst may even distract the reader.
 
-Indeed, such non-photorealistic techniques have historically been used to great effect in technical disciplines such as engineering (\cite{porter1988}) and mathematics (\cite{francis2007}), where precise communication of the specificities of structure is paramount. Styles can also be tailored to suit less obvious needs - for example, compared to photorealism, bolder styles can have benefits in terms of reduced degradation of image detail when subject to multiple stages of reproduction. Subtler styles can be applied to achieve effective results with very limited use of colour and ink, leading to improved economy for high-volume printing.
+Indeed, such non-photorealistic techniques have historically been used to great effect in technical disciplines such as engineering \citep{porter1988} and mathematics \citep{francis2007}, where precise communication of the specificities of structure is paramount. Styles can also be tailored to suit less obvious needs - for example, compared to photorealism, bolder styles can have benefits in terms of reduced degradation of image detail when subject to multiple stages of reproduction. Subtler styles can be applied to achieve effective results with very limited use of colour and ink, leading to improved economy for high-volume printing.
 
 \begin{figure}[h]
 	\centering
 	\begin{subfigure}[b]{0.3\textwidth}
 		\includegraphics[height=3.5cm]{images/ex_hand_drawn1}
-		\caption{}\label{ex_hand_drawn1}
+		\caption{Mathematical surface, rendered with hatches and a bounding box to convey depth information.}\label{ex_hand_drawn1}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
 		\includegraphics[width=4.5cm]{images/ex_hand_drawn2}
-		\caption{}\label{ex_hand_drawn2}
+		\caption{Surface plot, rendered with streamlines depicting surface curvature.}\label{ex_hand_drawn2}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
 		\includegraphics[height=3.5cm]{images/ex_hand_drawn3}
-		\caption{}\label{ex_hand_drawn3}
+		\caption{Cross-hatching used to convey form and lighting.}\label{ex_hand_drawn3}
 	\end{subfigure}
 	\caption{Traditional hand-drawn technical renderings.}
 \end{figure}
 
 The aim of the field of Non-Photorealistic Rendering (NPR) is to produce computer-generated images based upon such principles of traditional or digital art.
-Styles theoretically attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; pen-and-ink techniques such as stippling and cross-hatching; and 3D shading techniques such as cel-shading.
+Styles attainable through NPR techniques are many and varied, and include painting techniques such as watercolour, oils and pointillism; pen-and-ink techniques such as stippling and cross-hatching; and 3D shading techniques such as cel-shading.
 Styles themselves may be manipulated by the artist to add expression - focusing the viewer's attention to areas of particular importance, whilst abstracting away unnecessary detail.
 As such, compared to photorealism, traditional techniques realised through NPR allow certain classes of visual information to be effectively conveyed in-line with the communicational goals of the artist.
 
@@ -62,6 +62,13 @@ As such, compared to photorealism, traditional techniques realised through NPR a
 
 The previous section speaks to the benefit traditional drawing styles can bring to precisely communicate visual information. Unfortunately, actual implementation of NPR techniques in today's popular, widely available and easy to use rendering engines is limited, and often tailored to cartoon/anime styles (cel, Gooch shading).
 There is generally poor support for technical monochrome styles such as hatching, which is surprising given the strong tradition of such styles in technical disciplines.
+
+The NPR sub-field of Stroke Based Rendering (SBR) presents some interesting techniques to address computer-aided implementation of traditional techniques.
+An excellent paper by Aaron Hertzmann \citep{hertzmann2002} summarises a selection of SBR approaches to automatically (or semi-automatically) create images by placing discrete strokes, based on some direction from the user.
+
+Hertzmann reports that some techniques - such as Haeberli's painterly algorithm \citep{haeberli1990} - have been adopted into commercial drawing applications, however even as of today (2018) implementation of technical pen-and-ink styles do not appear to be as accessible. As such an opportunity is identified to close this gap.
+
+\section{Chosen Platform}
 
 Blender\footnote{\url{https://www.blender.org}} is a software package with capability for 2D sketching, 3D modelling, animation, physics simulation and rendering.
 Licensed under the GNU General Public License, Blender is free to use and as such enjoys widespread adoption across multiple fields.
@@ -74,16 +81,16 @@ A limited range of NPR styles are feasible with Cycles, however these are mostly
 \begin{figure}[h]
 	\centering
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm]{images/ex_photoreal}
-		\caption{Photorealistic.}\label{ex_photoreal}
+		\includegraphics[height=3.25cm]{images/ex_photoreal}
+		\caption{Photorealistic rendering, showing accurate light transport and material modelling.}\label{ex_photoreal}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm]{images/ex_toon1}
-		\caption{Stylised.}\label{ex_toon1}
+		\includegraphics[height=3.25cm]{images/ex_toon1}
+		\caption{Stylised rendering, accurate lighting with artificial materials.}\label{ex_toon1}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[height=4cm]{images/ex_toon2}
-		\caption{Cel.}\label{ex_toon2}
+		\includegraphics[height=3.25cm]{images/ex_toon2}
+		\caption{Cel-shading rendering, limited use of shading in favour of stark boundaries of colour.}\label{ex_toon2}
 	\end{subfigure}
 	\caption{Cycles renderings.}
 \end{figure}
@@ -94,38 +101,30 @@ The Freestyle\footnote{\url{http://freestyle.sourceforge.net}} edge-and-line-bas
 	\centering
 	\begin{subfigure}[b]{0.3\textwidth}
 		\includegraphics[height=3.25cm]{images/ex_sketchy1}
-		\caption{Sketchy.}\label{ex_sketchy1}
+		\caption{Charcoal line styles, rough sketch style.}\label{ex_sketchy1}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
 		\includegraphics[height=3.25cm]{images/ex_sketchy2}
-		\caption{Sketchy.}\label{ex_sketchy2}
+		\caption{Pencil perspective, rough sketch style.}\label{ex_sketchy2}
 	\end{subfigure}
 	\begin{subfigure}[b]{0.3\textwidth}
 		\includegraphics[height=3.25cm]{images/ex_line}
-		\caption{Line.}\label{ex_line}
+		\caption{Simple line perspective, technical style.}\label{ex_line}
 	\end{subfigure}
 	\caption{Freestyle renderings.}
 \end{figure}
 
-The NPR sub-field of Stroke Based Rendering (SBR) presents some interesting techniques to address such shortcomings.
-An excellent paper by Aaron Hertzmann (\cite{hertzmann2002}) summarises a selection of SBR approaches to automatically (or semi-automatically) create images by placing discrete strokes, based on some direction from the user.
-
-Hertzmann reports that some techniques - such as Haeberli's painterly algorithm (\cite{haeberli1990}) - have been adopted into commercial drawing applications, however even as of today (2018) implementation of technical pen-and-ink styles do not appear to be as accessible.
-As such, an opportunity was identified to close this gap.
-
 \section{Problem Definition}
 
-A project is undertaken to extend Blender by developing an add-on (plug-in) written in Python (hereinafter the ``System''). The aim of the System is to allow the user to easily produce high-quality renders of traditional, hand-drawn appearance, through application of traditional monochrome drawing techniques.
+A project was undertaken to extend Blender by developing an add-on (plug-in) written in Python (hereinafter the ``System''). The aim of the System is to allow the user to automatically produce high-quality renders of traditional, hand-drawn appearance, through application of traditional monochrome drawing techniques.
 
-A user-defined specification shall influence the output, allowing the user to choose subtle or bold styles, tailored for expressing structure, as suitable for the application.
+Although the System is automated, control is afforded to the User, allowing specification of subtle or bold styles, which are tailored for expressing structure, using minimal quantities of ink.
 
 System scope is limited to communication of mathematical surfaces. The primary use-case is creation of images for publication in technical papers or lecture slides/notes.
 
 The Customer and primary user is identified as John H Williamson, Lecturer, School of Computing Science, University of Glasgow.
 
 \section{Planning}
-
-Effective planning of activities was essential, given the short 12-week time-span over which the project was to be conducted, and the relative lack of the author's experience with Python development and image processing (high skills risk).
 
 Based upon the initial project brief\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Project-Brief}}, the approach taken was to stake-out all required high-level tasks and assign sensible durations to outline a feasible path. 
 In order to have meaningful discussions regarding detailed requirements (and reasonable gut-feel for levels of feature feasibility), initial ``ramp-up'' activities focussed on self-education by performing a literature review\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Research#literature-review}} of SBR techniques, familiarisation with Python, and familiarisation with potentially useful libraries.
@@ -139,7 +138,7 @@ Upon completion of ramp-up activities, a highly structured approach was taken to
 Initial requirements were gathered through a series of Customer meetings\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/meeting-notes}} and later summarised\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Requirements#initial-requirements}}.
 Detailed requirements were then clarified and formalised via a Customer questionnaire\footnote{\url{https://github.com/cjbel/blender-hand-drawn-npr/wiki/Requirements#questionnaire-responses}}. Each requirement was allocated a unique requirement ID to allow cross-referencing with user stories (see Section \ref{execution} for details).
 
-The outcome of this process is provided in detail in Appendix \ref{appendix_requirements}, however some foundational aspects are worth further discussion here.
+The outcome of this process is provided in detail in Appendix \ref{appendix_requirements}, and is summarised here.
 
 Firstly, an assumption was made that a purely image-space approach would be taken, i.e. no input is taken from Blender's object space.
 From research performed during ramp-up, it was clear that many generalised NPR approaches are possible when considering only 2D images as input.
@@ -167,7 +166,7 @@ Detailed requirements were composed into a series of user stories, and allocated
 Story points were then allocated based on risk and complexity.
 
 At this stage, consideration was given to schedule constraints, and decisions made with the Customer to identify which stories would be tackled within the single 4-week sprint planned for this project.
-It was decided that all Must Haves, Should Haves and Could Haves would be targeted, with all Would Like to Haves placed in product backlog (i.e. these items are dropped from project scope).
+It was decided that all Must Haves, Should Haves and Could Haves would be targeted, with all Would Like to Haves were dropped from project scope.
 
 All targeted stories are presented in Appendix \ref{appendix_sprint_backlog}. Dropped stories are presented in Appendix \ref{appendix_product_backlog}.
 

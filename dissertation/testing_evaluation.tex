@@ -20,7 +20,7 @@
 \subsection{Unit Testing}
 
 Reliance of the System on the \texttt{bpy} module drove different testing strategies for the \texttt{view-controller} and \texttt{model}.
-The separation of concerns provided by the chosen architecture was chosen in part to support robust automated testing.
+Indeed, the System architecture was chosen in part to support robust automated testing.
 First, tests related to the \texttt{model} (\texttt{bpy}-independent) are run within the local virtual environment.
 Then, tests related to  the \texttt{view-controller} (\texttt{bpy}-dependent) are run within the Blender environment, using Blender's headless mode (\texttt{-b} flag).
 Both strategies are combined in a bash script, which acts as the test runner.
@@ -44,9 +44,9 @@ The server was configured to first install all necessary Blender and Python depe
 To ensure the System operated as expected with regards to basic functional requirements, a series of input Blender models were chosen for validation testing.
 This consisted of a selection of mathematical surface models (the core-focus of the project), and a selection of assorted objects intended to test the flexibility and limits of the System.
 
-Overall, the System performs very well, yielding high-quality SVG renderings for mathematical surfaces and assorted objects, which (to the author's eye) accurately conveys structure and character of the object. A subset rendered test scenes are presented in Appendix \ref{appendix_renders}. However, two bugs were identified which have not been addressed prior to submission, both are related to Silhouette lines.
+Overall, the System performs very well, yielding high-quality SVG renderings for mathematical surfaces and assorted objects, which (to the author's eye) accurately conveys structure and character of the object. A subset of rendered test scenes are presented in Appendix \ref{appendix_renders}. However, two bugs were identified which have not been addressed prior to submission. Both are related to silhouette lines.
 
-First, silhouette lines fail to express the correct line thickness at the intersection of some internal edges. This is particularly visible when silhouette thickness is scaled according to depth when the silhouette spans two extreme depth values.
+First, silhouette lines fail to express the correct line thickness at the intersection of certain internal edges. This is particularly visible when silhouette thickness is scaled according to depth when the silhouette spans two extreme depth values.
 
 \begin{figure}[h!]
 	\centering
@@ -132,8 +132,9 @@ Finally, the participant was asked to rate various renderings produced using dif
 
 Participants rated each image on a scale of 1 to 5, with 1 described as ``very poor'', and 5 described as ``superb''. 
 Again, images are separated into two groups for analysis - mathematical surfaces and other objects.
+A basicial statistical description of results is shown in Figure \ref{eval_quality_results}.
 
-Overall, mathematical surfaces are deemed to be rendered at a higher quality level, and some examples were consistently rated ``superb''.
+Overall, mathematical surfaces are deemed to be rendered at a reasonable quality level, and some examples were consistently rated ``superb''.
 Other objects do not perform as well, however results are still generally positive.
 
 These are encouraging results, considering the short time-span of the project and the critical audience chosen.

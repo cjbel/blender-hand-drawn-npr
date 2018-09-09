@@ -4,3 +4,34 @@
 % Include future work as well.
 
 \chapter{Conclusion}\label{conclusion}
+
+A System is presented which extends Blender to allow automatic high-quality generation of SVG renderings of mathematical surfaces in a traditional, hand-drawn style. The System employs a combination of pen-and-ink styles, specifically streamline and directional stipple illustration, to communicate underlying structure as well as lighting, shadow and ambient occlusion characteristics, in a manner that supports economy of ink.
+
+Evaluation has validated that the chosen NPR styles and their implementation are largely effective and aesthetically pleasing. 
+With this, Must-Have functionality defined prior to execution (Appendix \ref{appendix_sprint_backlog}, stories S10, S20, S30, S40), has been delivered.
+
+\subsection{Future Work \& Improvements}
+
+Some features (stories S50, S60, S70 and S80) had to be dropped from scope during execution due to time constraints. 
+These make good initial suggestions for future work.
+In particular, user story S60, which proposes using Blender's grease pencil to highlight areas of the model to be emphasised in the final render, is thought to be particularly valuable for increasing the level of artistic control available to the User.
+This level of User influence will likely improve the overall quality of the output images, particularly of non-mathematical surfaces.
+
+There may be benefit to further exploring the ``ink-cost'' approach taken during evaluation of parsimony of ink.
+Specifically, allowing the User to specify a maximum cost as a constraint would be a useful way to control the overall subtleness of the output.
+
+A strength of the System is the large degree of control the User has over the appearance of the output, by adjusting multiple parameters in terms of how line thickness is expressed, or how stipple density is determined.
+This can be overwhelming however, leading to a time-consuming trial-and-error approach, trying different settings until the desired look is achieved.
+A valuable addition to improve this User experience would be a method to provide quick previews of the final render, ideally made visible within Blender itself.
+An interesting idea is to use the Blender API's OpenGL wrapper (the \texttt{bgl} module) to draw previewed strokes directly onto the model in the 3D viewport.
+For preview purposes, this would avoid the computational overhead of SVG generation, which can be significant with large numbers of stipples and complex clipping paths.
+
+Line thickness expression techniques such as perspective foreshortening (depth scaling) and light shading (diffuse intensity scaling) are implemented well to strong effect, however scaling of line thickness with surface curvature can be improved.
+Currently, this is achieved by computing the curvature of the line itself, which is not necessarily representative of the underlying surface curvature.
+An improved implementation could make use of rate of change of surface normals, which may give a more faithful visualisation of curvature.
+
+Finally, there is much scope for general performance improvements, particularly implementation of concurrency.
+Currently, \texttt{Silhouette}, \texttt{InternalEdges}, \texttt{Streamlines} and \texttt{Stipples} are computed one after the other, in sequence.
+Assuming support in Blender's Python environment, a multi-threaded solution could greatly increase render times by performing these operations in parallel.
+Indeed, only minimal changes to the lower-level modules in \texttt{elements} and \texttt{primitives} would be required to implement this.
+At a minimum, a threaded divide-and-conquer approach could be implemented for processing of SVG stipples, which is by far the aspect with the longest run-time, assuming the illustration is stipple-dense.
