@@ -130,9 +130,6 @@ class RenderNPR(bpy.types.Operator):
 
     def execute(self, context):
 
-        bpy.ops.wm.prepare_npr_settings()
-        bpy.ops.wm.create_npr_compositor_nodes()
-
         logger.debug("Executing RenderNPR...")
 
         context = bpy.context

@@ -38,10 +38,12 @@ def register():
     from .view_controller import operators
     from .view_controller import properties
     from .view_controller import ui
+    from .view_controller import helpers
 
     operators.register()
     properties.register()
     ui.register()
+    helpers.set_pre_hook()
 
 
 def unregister():
