@@ -136,7 +136,6 @@ class Surface:
         return surface_data.obj != 0
 
     def compute_curvature(self, path, target_image):
-
         for i in range(0, len(path.points) - 1):
             cur_norm = self.at_point(path.points[i][0], path.points[i][1]).norm
             next_norm = self.at_point(path.points[i + 1][0], path.points[i + 1][1]).norm

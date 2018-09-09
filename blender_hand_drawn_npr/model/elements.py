@@ -71,51 +71,12 @@ class Silhouette:
                                     self.settings.subpix_window_size)
         logger.info("Silhouette corners found: %d", len(corners))
 
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        #
-        # # Display the image and plot all contours found
-        # fig, ax = plt.subplots()
-        # ax.plot(contour[:, 1], contour[:, 0], linewidth=2, color="k")
-        #
-        # ax.axis('image')
-        # ax.set_xticks([])
-        # ax.set_yticks([])
-        # plt.gca().invert_yaxis()
-        #
-        # print(len(corners))
-        #
-        # for corner in corners:
-        #     ax.plot(corner[0], corner[1], '--ro')
-        # plt.show()
-        # ----------------
-
         if corners:
             self.paths += path.split_corners(corners)
         else:
             self.paths.append(path)
 
         logger.info("Silhouette Paths found: %d", len(self.paths))
-
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        #
-        # # Display the image and plot all contours found
-        # fig, ax = plt.subplots()
-        # for path in self.paths:
-        #     contour = np.array(path.points)
-        #     ax.plot(contour[:, 0], contour[:, 1], linewidth=2)
-        #
-        # ax.axis('image')
-        # ax.set_xticks([])
-        # ax.set_yticks([])
-        # plt.gca().invert_yaxis()
-        # plt.show()
-        # ----------------
 
         for path in self.paths:
             hifi_path = path.round().bump(self.surface).remove_dupes().simple_cull(self.settings.cull_factor)
@@ -160,37 +121,8 @@ class InternalEdges:
         # By using the object image as a mask we find only internal edges and disregard silhouette edges.
         edge_image = feature.canny(self.surface.z_image, sigma=1, mask=self.surface.obj_image.astype(bool))
 
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # from skimage import io, img_as_uint
-        # io.imsave("/tmp/int_edge.png", img_as_uint(edge_image))
-        # ----------------
-
         # Identify all continuous lines.
         labels = measure.label(edge_image, connectivity=2)
-
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # import matplotlib.pyplot as plt
-        # import matplotlib.patches as mpatches
-        # from skimage.measure import regionprops
-        # from skimage import img_as_uint
-        #
-        # fig, ax = plt.subplots(figsize=(10, 6))
-        # ax.imshow(img_as_uint(edge_image))
-        #
-        # for region in regionprops(labels):
-        #     # take regions with large enough areas
-        #     # draw rectangle around segmented coins
-        #     minr, minc, maxr, maxc = region.bbox
-        #     rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr,
-        #                               fill=False, edgecolor='red', linewidth=2)
-        #     ax.add_patch(rect)
-        #
-        # ax.set_axis_off()
-        # plt.tight_layout()
-        # plt.show()
-        # ----------------
 
         for region in measure.regionprops(labels):
             image = region.image
@@ -267,16 +199,6 @@ class Streamlines:
         u_image = self.surface.u_image
         v_image = self.surface.v_image
         n = self.settings.streamline_segments
-
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # from skimage import io
-        #
-        # io.imshow(u_image)
-        # io.show()
-        # io.imshow(v_image)
-        # io.show()
-        # ----------------
 
         u_separation, v_separation = (u_image.max() - u_image.min()) / n, \
                                      (v_image.max() - v_image.min()) / n
@@ -380,23 +302,6 @@ class Streamline:
                 else:
                     logger.debug("Streamline of length %d rejected", num_points)
 
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        #
-        # # Display the image and plot all contours found
-        # fig, ax = plt.subplots()
-        # ax.imshow(self.surface.v_image, cmap=plt.cm.bone)
-        # for path in self.paths:
-        #     contour = np.array(path.points)
-        #     ax.plot(contour[:, 0], contour[:, 1], linewidth=2)
-        # ax.axis('image')
-        # ax.set_xticks([])
-        # ax.set_yticks([])
-        # plt.show()
-        # ----------------
-
 
 class Stipples:
     """
@@ -440,13 +345,6 @@ class Stipples:
 
         self.reference_image = combined
 
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # from skimage import io
-        # io.imshow(combined)
-        # io.show()
-        # ----------------
-
         # Compute the mean of intensities which lie within the object boundary.
         self.reference_stats = stats.describe(combined[util.invert(mask)])
 
@@ -475,22 +373,6 @@ class Stipples:
 
         # Extract the list of node coordinates from the image.
         nodes = np.argwhere(image)
-
-        # ----------------
-        # TODO: REMOVE, FOR REPORT ONLY.
-        # import matplotlib.pyplot as plt
-        # fig = plt.figure(figsize=(14, 8))
-        # ax1 = fig.add_subplot(1, 1, 1)
-        # plt.rc('figure', figsize=(12.0, 12.0))
-        # # node layout
-        # ax1.plot(nodes[:, 1], nodes[:, 0], '.', markersize=1)
-        # ax1.axis("image")
-        # ax1.set_xlim(0, x_res)
-        # ax1.set_ylim(0, y_res)
-        # ax1.set_title("Threshold: " + str(threshold))
-        # ax1.invert_yaxis()
-        # plt.show()
-        # ----------------
 
         u_image = self.surface.u_image
         v_image = self.surface.v_image

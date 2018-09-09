@@ -3,10 +3,13 @@ import tempfile
 
 import bpy
 
-from ..model.illustrate import Illustrator
-from ..model.data import ThicknessParameters, LightingParameters, StippleParameters, Settings
-
 logger = logging.getLogger(__name__)
+
+try:
+    from ..model.data import ThicknessParameters, LightingParameters, StippleParameters, Settings
+    from ..model.illustrate import Illustrator
+except (ImportError, NameError):
+    logger.warning("Model data can not be imported. This is fine if running Blender tests in CI, trouble if otherwise.")
 
 
 class PrepareNPRSettings(bpy.types.Operator):

@@ -14,6 +14,7 @@ class Illustrator:
     def __init__(self, settings):
         self.settings = settings
 
+        # Load render pass images from disk.
         self.surface = Surface()
         self.surface.init_obj_image(os.path.join(self.settings.in_path, "IndexOB0001.png"))
         self.surface.init_z_image(os.path.join(self.settings.in_path, "Depth0001.png"))
@@ -30,6 +31,7 @@ class Illustrator:
         self.intersect_boundaries = []
 
     def illustrate(self):
+        # Silhouettes are essential to generate as they are used for clipping paths.
         silhouette = Silhouette(surface=self.surface, settings=self.settings)
         silhouette.generate()
         [self.illustration.add(svg_stroke) for svg_stroke in silhouette.svg_strokes]
@@ -60,6 +62,9 @@ class Illustrator:
 
 
 if __name__ == "__main__":
+
+    # Example of stand-alone operation.
+
     from blender_hand_drawn_npr.model.data import Settings, LightingParameters, StippleParameters, ThicknessParameters
 
     settings = Settings(out_filepath="/tmp/out.svg",
