@@ -138,7 +138,7 @@ This is implemented in two different ways, depending on the desired speed of exe
 In both cases the silhouette path is used to define the overall SVG clipping path for the scene.
 The first approach indiscriminately applies this clipping path to every stroke in the image, regardless of whether it breaches the silhouette.
 This is quick to render, however opening the image in an editor (tested with Inkscape) is extremely resource-intensive as the clipping paths must be recomputed for each stipple whenever a change is made.
-The second approach only applies the clipping path if the stroke breaches the silhouette, but run-time is doubled as additional checks must be made during placement.
+The second approach only applies the clipping path if the stroke breaches the silhouette, but run-time is significantly impacted (Section \ref{performance}) as additional checks must be made during placement.
 The benefit however is good performance in external editors.
 The approach used can be toggled in the UI using option ``Optimise Clip Path''.
 
@@ -184,8 +184,25 @@ The structure of such a stroke is shown in Appendix \ref{appendix_discrete_strok
 \end{figure}
 
 \FloatBarrier
-\subsection{Performance}
+\subsection{Performance}\label{performance}
 
 There are no specific performance requirements, however a basic run-time benchmark is presented here.
 Run-time does not include time taken for Cycles to produce a render result. 
 Performance analysis is limited only to the developed System (i.e. processing of render passes to produce the SVG rendering shown in Figure \ref{demo_result}).
+
+Machine details:
+\begin{itemize}
+	\item{OS: Linux desktop 4.17.3-1-ARCH}
+	\item{CPU: Intel(R) Core(TM) i5-4690K CPU @ 3.50GHz, running at stock clock speed}
+\end{itemize}
+
+Performance results:
+\begin{itemize}
+	\item{Scene: cosinus.blend (with settings as depicted in Figure \ref{demo_blender})}
+	\item{Input scene resolution: 3840 x 2160 @ 100\% scale}
+	\item{Silhouette run-time: 9 seconds}
+	\item{Internal Edge run-time: 3 seconds}
+	\item{Streamline run-time: 20 seconds}
+	\item{Stipple run-time (Optimise Clip Path disabled): 146 seconds}
+	\item{Stipple run-time (Optimise Clip Path enabled): 576 seconds}
+\end{itemize}
