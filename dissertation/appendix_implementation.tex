@@ -16,13 +16,13 @@
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/sil_path_corners.png}
-	\caption{Silhouette \texttt{Path} and sharp edges identified.}\label{sil_path_corners}
+	\caption{Silhouette \texttt{Path} found with \texttt{find\_countours} and sharp edges identified with Harris corner detection (shown in red).}\label{sil_path_corners}
 \end{figure}
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/sil_split_paths.png}
-	\caption{Silhouette \texttt{Path} split into multiple \texttt{Path}s based on sharp edges. A \texttt{Curve1D} object is created for each \texttt{Path}, which produces a composite Bezier curve definition for each segment.}\label{sil_split_paths}
+	\caption{Silhouette \texttt{Path} split into multiple \texttt{Path}s based on sharp edges. A \texttt{Curve1D} object is created for each \texttt{Path}, which produces a composite Bezier curve definition for each segment. Each path shown in a different colour.}\label{sil_split_paths}
 \end{figure}
 
 \begin{figure}[h!]
@@ -50,7 +50,7 @@
 \begin{figure}[h!]
 	\centering
 	\includegraphics[height=5cm]{images/int_labels.png}
-	\caption{Identification of distinct lines using \texttt{skimage.measure.label}. Each line exists in image-space, and must ultimately be converted into a \texttt{Path}, i.e. an \emph{ordered sequence} of image-space coordinates representing the journey along the line.}\label{int_labels}
+	\caption{Identification of distinct lines using \texttt{skimage.measure.label}, each line shown within a red bounding box. Each line exists in image-space, and must ultimately be converted into a \texttt{Path}, i.e. an \emph{ordered sequence} of image-space coordinates representing the journey along the line.}\label{int_labels}
 \end{figure}
 
 \begin{figure}[h!]

@@ -118,9 +118,7 @@ The Freestyle\footnote{\url{http://freestyle.sourceforge.net}} edge-and-line-bas
 
 A project was undertaken to extend Blender by developing an add-on (plug-in) written in Python (hereinafter the ``System''). The aim of the System is to allow the user to automatically produce high-quality renders of traditional, hand-drawn appearance, through application of traditional monochrome drawing techniques.
 
-Although the System is automated, control is afforded to the User, allowing specification of subtle or bold styles, which are tailored for expressing structure, using minimal quantities of ink.
-
-System scope is limited to communication of mathematical surfaces. The primary use-case is creation of images for publication in technical papers or lecture slides/notes.
+Although the System is automated, control is afforded to the User, allowing specification of subtle or bold styles, which are tailored for expressing structure. System scope is limited to communication of mathematical surfaces. The primary use-case is creation of images for publication in technical papers or lecture slides/notes.
 
 The Customer and primary user is identified as John H Williamson, Lecturer, School of Computing Science, University of Glasgow.
 
@@ -146,7 +144,7 @@ This yields many practical advantages such as: enabling use of powerful pre-exis
 These factors were all deemed valuable to reducing overall project risk.
 
 Secondly, requirements for user-control had to be understood.
-This was important, as the premise of the project relies on the artist (in this case the user), being able to influence the output in a way that meets their specific communicational needs.
+This was important, as the premise of the project relies on the artist (the User), being able to influence the output in a way that meets their specific communicational needs.
 A key outcome of the questionnaire was identification of a requirement to control the manner in which line/stroke thickness can vary along its length.
 This technique can be used to great effect to communicate depth for example, where lines taper off as they move further away from the camera.
 Implementation of such perspective foreshortening techniques in existing software is lacking, so this was seen as good opportunity for the System to add genuine value.
@@ -158,7 +156,7 @@ This is beneficial from the user's point of view, as vector images can be scaled
 Finally, there was a desire for the chosen styles to adhere to principles of economy of ink.
 Traditional styles when applied with liberal quantities of ink can approach photorealism in the hands of a capable artist, and this is not the goal of this project.
 As such, the focus was on minimal or abstract styles, which maximise communicational value whilst minimising ink usage.
-Figures \ref{ex_hand_drawn1}, \ref{ex_hand_drawn2}, \ref{ex_hand_drawn3} make for excellent prototypes for the targeted styles.
+Figures \ref{ex_hand_drawn1}, \ref{ex_hand_drawn2}, \ref{ex_hand_drawn3} make for excellent prototypes for the targeted styles, consisting of surface streamlines to reveal structure, and directional stipple strokes (similar to hatching) to reveal both structure and surface shading.
 
 \section{Execution}\label{execution}
 
@@ -167,15 +165,12 @@ Story points were then allocated based on risk and complexity.
 
 At this stage, consideration was given to schedule constraints, and decisions made with the Customer to identify which stories would be tackled within the single 4-week sprint planned for this project.
 It was decided that all Must Haves, Should Haves and Could Haves would be targeted, with all Would Like to Haves were dropped from project scope.
-
 All targeted stories are presented in Appendix \ref{appendix_sprint_backlog}. Dropped stories are presented in Appendix \ref{appendix_product_backlog}.
 
 Each story was then granted a unique story ID. To ensure no requirements were orphaned, requirement IDs were cross-referenced with each story ID. 
 A matrix was defined to track this coverage, and is presented in Appendix \ref{appendix_coverage_matrix}.
 
-Stories within sprint backlog were added to the project plan, with foundational stories (S10, S20) taking initial priority, with high-risk stories which made up the bulk of complex development (S30, S40) following at the earliest opportunity on the time-line. 
-Lower-risk and lower value stories (S50, S60, S70, S80) were placed towards the end of development, with the understanding that these can be dropped if delays are encountered elsewhere.
-
-According to this rationale, the project execution plan was revised accordingly and is made available in Appendix \ref{appendix_execution_plan}.
+Stories within sprint backlog were added to the project plan, with foundational stories (S10, S20) taking initial priority, with high-risk stories which made up the bulk of complex development (S30, S40) following at the earliest opportunity on the timeline. 
+Lower risk and lower value stories (S50, S60, S70, S80) were placed towards the end of development, with the understanding that these can be dropped if delays are encountered elsewhere. According to this rationale, the project execution plan was revised accordingly and is made available in Appendix \ref{appendix_execution_plan}.
 
 % TODO: Make changes according to JW's comments, include something about chosen styles (Grid, Stipples/Hatching).

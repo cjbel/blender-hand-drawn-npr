@@ -34,34 +34,6 @@ class BlenderTests(unittest.TestCase):
         property_group_name = "system_settings"
         self.assertTrue(hasattr(bpy.types.Scene, property_group_name))
 
-    # def test_system_checkbox(self):
-    #     """ Test that the checkbox which enables/disables the system is present. """
-    #     property_name = "is_system_enabled"
-    #     self.assertTrue(hasattr(bpy.context.scene.system_settings, property_name))
-
-    def test_pre_render_hooks(self):
-        """ Test that pre-render handlers have been registered. """
-        pass
-
-    # def test_post_render_hook_process_illustration(self):
-    #     """ Test that process_illustration gets registered as a post-render hook upon enabling the System. """
-    #     handler_name = "process_illustration"
-    #     bpy.context.scene.system_settings.is_system_enabled = True
-    #     self.assertTrue(handler_name in str(bpy.app.handlers.render_post))
-
-    # def test_pass_output(self):
-    #     """ Test that a render pass gets written to disk after render. """
-    #     image_filename = os.path.join(tempfile.gettempdir(), "DiffDir0001.png")
-    #     # Remove any old versions.
-    #     try:
-    #         os.remove(image_filename)
-    #     except FileNotFoundError:
-    #         pass
-    #     bpy.context.scene.system_settings.is_system_enabled = True
-    #     bpy.context.scene.cycles.samples = 1
-    #     bpy.ops.render.render()
-    #     self.assertTrue(os.path.isfile(image_filename))
-
 
 # Ref: https://wiki.blender.org/wiki/Tools/Tests/Python
 if __name__ == '__main__':

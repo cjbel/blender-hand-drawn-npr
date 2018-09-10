@@ -54,8 +54,8 @@ First, silhouette lines fail to express the correct line thickness at the inters
 	\caption{Extreme close-up of Figure \ref{render_hyperbolic_paraboloid_polar}, demonstrating silhouette bleed-over. The line leading to the right should be thin, to represent the relatively far distance of that edge from the camera. Instead it is rendered thick, because the value at the 3-way intersection is sampled for depth, which is relatively close to the camera.}\label{silhouette_bug}
 \end{figure}
 
-The issue demonstrated in Figure \ref{silhouette_bug} stems from the method used to construct \texttt{CurvedStroke}s. The value of interest (in this case intensity of the depth map) of the underlying surface is sampled in globally-fixed intervals along the length of a stroke. The line thickness is then scaled based on this underlying value.
-This approach works well when the thickness varies gradually and linearly, however fails when very large changes must be reflected over small distances.
+The issue demonstrated in Figure \ref{silhouette_bug} stems from the method used to construct \texttt{CurvedStroke}s. The scaling value (in this case intensity of the depth map of the underlying surface) is sampled in globally-fixed intervals along the length of a stroke. The line thickness is then scaled based on this underlying value.
+This approach works well when the thickness varies gradually and linearly, however fails when very large changes must be reflected over small distances (i.e. step-changes).
 A simple solution is to greatly increase the sampling interval, however this will incur performance penalties.
 A more intelligent approach may be appropriate, where areas of significant change are identified in pre-processing and the sampling interval is greatly increased only at these local areas.
 
@@ -95,7 +95,7 @@ For each rendering of a given object, each participant voted whether it should b
 
 For mathematical images, a strong preference exists for the Streamline style.
 This makes some sense, as the mathematical surfaces presented are continuous, allowing for surface streamlines to cleanly follow the underlying structure in a pleasing way.
-Renderings produce by Blender (with a default diffuse material applied) and those produced by the System in the stipple style are tied for second preference.
+Renderings produced by Blender (with a default diffuse material applied) and those produced by the System in the stipple style are tied for second preference.
 Both of these styles rely on Blender's (Cycles') underlying lighting model to produce the appearance of shading, so this correlation makes some sense.
 It is encouraging that the stipple style is viewed as effective as Blender's, and suggests that stipples can be used as alternative, with the added benefits that hand-drawn styles can bring.
 

@@ -20,7 +20,7 @@ Similarly, ``data passes'' capture surface normals, depth information, and UV te
 Lighting and data passes can themselves be expressed as images and written to disk.
 The typical use-case for this functionality is post-processing of render scenes, where compositing software is used to combine passes in different ways to affect characteristics of the final rendering.
 
-For this project however, selected render passes are post-processed directly with Python, and used to inform placement of strokes through a combination of image-space processing and stroke-based rendering techniques. As such, the System builds directly on render passes produced by the Cycles engine in Blender, and these images form the fundamental input to the System. The combination of all strokes is rendered to an SVG image, which is the sole System output.
+For this project however, selected render passes are post-processed directly with Python, and used to inform placement of strokes through a combination of image-space processing and SBR techniques. As such, the System builds directly on render passes produced by the Cycles engine in Blender, and these images form the fundamental input to the System. The combination of all strokes is rendered to an SVG image, which is the sole System output.
 
 This high-level application flow is presented in Appendix \ref{appendix_design}, Figure \ref{flow}.
 
@@ -98,7 +98,7 @@ The continuous outline path is then split at each identified corner. Individual 
 This process is outlined graphically in Appendix \ref{impl_silhouette}.
 
 No render pass directly indicates internal edges so a different approach is taken here, as outlined in Appendix \ref{impl_internal}.
-Distinct internal edges are first detected and labelled using \texttt{skimage.feature.canny} and \texttt{skimage.measure.label}. Reusing \texttt{find\_contours} would not be appropriate here, as this would have the effect of detecting paths \emph{around} each edge line.
+Distinct internal edges are first detected \citep{saito1990} and labelled using \texttt{skimage.feature.canny} and \texttt{skimage.measure.label}. Reusing \texttt{find\_contours} would not be appropriate here, as this would have the effect of detecting paths \emph{around} each edge line.
 Instead, the end-point coordinates of each line are first detected.
 The premise is that if a pixel only has one neighbouring occupied pixel in its Moore's neighbourhood, then it can be considered an end-point of the line.
 End-points are computed efficiently for each line using convolution and a suitable kernel.
@@ -120,13 +120,13 @@ The process is then repeated for multiple intensity values, according to the num
 An optimisation-based SBR approach is taken to placement of discrete strokes (\texttt{Stipples}), relying on an existing implementation\footnote{\url{https://github.com/johnhw/variable_density}} of Fornberg and Flyer's \citep{fornberg2015} 2D node-distribution algorithm.
 
 First, diffuse direct, shadow and ambient occlusion render passes are combined into an intensity map, based on weightings defined by the User.
-A density function is defined, which allows intensity at a point to be queried.
+A density function is then defined, which allows intensity at a point to be queried.
 This function is supplied to the third-party \texttt{variable\_density} module which computes a distribution of ``node'' locations.
 The density of the computed distribution varies according to the characteristics of the intensity map, i.e. dark surfaces yield a higher density of nodes, light surfaces yield a lower density.
 
 The intensity at each node location is then checked based on a User-defined threshold value, and nodes beyond the threshold are discarded.
-This approach affords the User control further control over character of the final outcome.
-Finally, a \texttt{DirectionalStippleStroke} is created for each remaining node location, oriented according to the underlying U-coordinate.
+This approach affords the User further control over character of the final outcome.
+Finally, a \texttt{DirectionalStippleStroke} is created for each remaining node location, and is oriented according to the underlying U-coordinate giving a strong cue to reveal underlying structure.
 
 The process is outlined in Appendix \ref{impl_stipples}.
 
@@ -158,8 +158,8 @@ The structure of such a stroke is shown in Appendix \ref{appendix_continous_stro
 \subsubsection{Discrete Strokes}
 
 \texttt{Stipples} are much simpler to model, in that each stroke consists of two rounded end caps joined by straight lines.
-However, this simple design still allows for flexibility of styles - both head and tail radius is User-configurable, along with stroke length.
-Currently, the System is implemented such that all stipples have the same shape/size, however this is easy to change to allow different variations of stipple strokes throughout the image.
+However, this simple design still allows for flexibility of styles - both head and tail radius is User-configurable, along with stroke length, allowing the user to specify shapes ranging from traditional ``dot'' stipples (zero-length, both radii equal) to tapered directional strokes.
+Currently, the System is implemented such that all stipples in a given image have the same shape/size, however variability would be trivial to program.
 
 The structure of such a stroke is shown in Appendix \ref{appendix_discrete_strokes}.
 
